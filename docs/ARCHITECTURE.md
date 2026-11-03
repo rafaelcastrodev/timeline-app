@@ -4,9 +4,9 @@
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Build | Vite + React + TypeScript (strict) | |
+| Build | Vite + React + TypeScript (strict) | TypeScript pinned to 6.0.x until typescript-eslint supports 7 (D-010) |
 | Styling | Tailwind CSS v4 | |
-| Components | shadcn/ui (Radix primitives) | Dialog, Drawer/Sheet, AlertDialog, Button, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
+| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Pointer, touch and keyboard sensors |
 | Routing | React Router, data router (`createBrowserRouter`) | Required for `useBlocker` |
@@ -14,7 +14,8 @@
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
 | IDs | `crypto.randomUUID()` | |
 | Unit/integration tests | Vitest + Testing Library + `fake-indexeddb` | |
-| E2E tests | Playwright (mobile and desktop viewports) | |
+| E2E tests | Playwright (mobile and desktop viewports) | Projects: `mobile` 360×800 with touch, `desktop` 1280×800; Chromium |
+| Lint / format | ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier (Tailwind class sorting) | |
 
 Library versions: latest stable at setup time. Check each library's current docs during phase 0 (APIs differ across major versions, notably Tailwind v4 setup and shadcn/ui CLI).
 
@@ -35,7 +36,12 @@ src/
   hooks/            useUnsavedChangesGuard, useInfiniteLimit, useMediaQuery
   lib/              dates, slug, utils
   types/
+  test/             Vitest setup
+e2e/                Playwright specs
 ```
+
+- Unit/integration tests are co-located as `*.test.ts(x)` under `src/`.
+- Import alias: `@/` maps to `src/`.
 
 ## Data model
 
@@ -72,10 +78,18 @@ db.version(1).stores({
 ### Rules
 
 - Create/update/delete of a node bumps the parent timeline's `updated_at` in the same transaction (dashboard sorts by recent activity).
-- Reorder: after a drop, renumber `position` for the timeline's nodes inside one transaction. Integer renumbering is enough for personal-scale data (hundreds of nodes).
+- Reorder: after a drop, renumber `position` for the timeline's nodes inside one transaction. Integer renumbering is enough for personal-scale data (hundreds of nodes). The repository takes the full ordered id list and rejects it unless it is a permutation of the timeline's node ids. Reorder bumps the timeline's `updated_at` but not the nodes' (order is not node content).
 - New node: `position = max + 1` (appended at the end).
+- Delete node: renumber the remaining nodes so positions stay `0..n-1`.
 - Delete timeline: delete its nodes and the timeline in one transaction.
 - Call `navigator.storage.persist()` on startup to reduce the risk of the browser evicting data.
+
+### Code layout
+
+- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`) and partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`). Titles are trimmed and required.
+- Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
+- Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
+- Test helper `setupTestDatabase()` (`src/test/db.ts`) clears tables and fakes only `Date`; timers stay real for fake-indexeddb.
 
 ## Routes
 

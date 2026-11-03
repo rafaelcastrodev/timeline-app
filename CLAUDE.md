@@ -30,4 +30,11 @@ Personal, offline-first web app for building event timelines. React SPA, all dat
 
 ## Commands
 
-Defined in phase 0 (see `docs/PLAN.md`). Update this section when `package.json` scripts exist.
+- `npm run dev`: Vite dev server.
+- `npm run build`: type check (`tsc -b`) + production build.
+- `npm run typecheck`: type check only.
+- `npm run lint`: ESLint.
+- `npm run format` / `npm run format:check`: Prettier write / check.
+- `npm test`: Vitest (single run); `npm run test:watch` for watch mode.
+- `npm run e2e`: Playwright (`mobile` and `desktop` projects; starts the dev server on port 4173).
+- Add shadcn/ui components: `npx shadcn@latest add <name>`.

@@ -2,34 +2,34 @@
 
 ## Current status
 
-- Active phase: **0. Setup** (not started).
-- Done so far: project folder, git repository, `CLAUDE.md`, docs.
-- Next step: phase 0, first item.
+- Active phase: **2. Markdown foundation** (not started).
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks, 30 unit tests).
+- Next step: phase 2, first item.
 
 ## Phases
 
 Phases 1–5 form the usable core. Phases 6–8 are independent of each other.
 
 ### 0. Setup
-- [ ] Scaffold Vite + React + TypeScript (strict) in this folder.
-- [ ] Tailwind CSS v4.
-- [ ] shadcn/ui init + base components (Button, Input, Textarea, Dialog, Drawer/Sheet, AlertDialog, Tabs, Toggle Group, Dropdown Menu, Sonner, Skeleton).
-- [ ] ESLint + Prettier.
-- [ ] Vitest + Testing Library + `fake-indexeddb`.
-- [ ] Playwright with mobile (e.g. 360×800) and desktop projects.
-- [ ] Folder structure from `docs/ARCHITECTURE.md`.
-- [ ] Fill the "Commands" section of `CLAUDE.md`.
+- [x] Scaffold Vite + React + TypeScript (strict) in this folder.
+- [x] Tailwind CSS v4.
+- [x] shadcn/ui init + base components (Button, Input, Textarea, Dialog, Drawer/Sheet, AlertDialog, Tabs, Toggle Group, Dropdown Menu, Sonner, Skeleton).
+- [x] ESLint + Prettier.
+- [x] Vitest + Testing Library + `fake-indexeddb`.
+- [x] Playwright with mobile (e.g. 360×800) and desktop projects.
+- [x] Folder structure from `docs/ARCHITECTURE.md`.
+- [x] Fill the "Commands" section of `CLAUDE.md`.
 
 Done when: `dev`, `build`, `lint`, `test` and `e2e` scripts all pass on an empty app.
 
 ### 1. Data layer
-- [ ] Dexie instance and schema v1.
-- [ ] zod schemas + TS types for `Timeline` and `TimelineNode`.
-- [ ] Timeline repository: create, update, delete (cascade), get, list (ordered by `updated_at` desc, limit).
-- [ ] Node repository: create (append position), update, delete, list by timeline (ordered by position), reorder (transactional renumbering).
-- [ ] Node writes bump parent `updated_at`.
-- [ ] `navigator.storage.persist()` on startup.
-- [ ] Hooks over `useLiveQuery`.
+- [x] Dexie instance and schema v1.
+- [x] zod schemas + TS types for `Timeline` and `TimelineNode`.
+- [x] Timeline repository: create, update, delete (cascade), get, list (ordered by `updated_at` desc, limit).
+- [x] Node repository: create (append position), update, delete, list by timeline (ordered by position), reorder (transactional renumbering).
+- [x] Node writes bump parent `updated_at`.
+- [x] `navigator.storage.persist()` on startup.
+- [x] Hooks over `useLiveQuery`.
 
 Done when: unit tests cover CRUD, cascade delete, ordering, reorder, `created_at` unchanged on update, parent `updated_at` bump.
 
