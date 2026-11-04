@@ -1,4 +1,6 @@
 import type { RouteObject } from 'react-router'
+import { NodeCreateDialog } from '@/features/nodes/node-create-dialog'
+import { NodeDetailDialog } from '@/features/nodes/node-detail-dialog'
 import { NoTimelineSelected } from '@/features/timelines/no-timeline-selected'
 import { TimelineCreateDialog } from '@/features/timelines/timeline-create-dialog'
 import { TimelineEditDialog } from '@/features/timelines/timeline-edit-dialog'
@@ -22,7 +24,11 @@ export const routes: RouteObject[] = [
       {
         path: 'timelines/:timelineId',
         element: <TimelineView />,
-        children: [{ path: 'edit', element: <TimelineEditDialog /> }],
+        children: [
+          { path: 'edit', element: <TimelineEditDialog /> },
+          { path: 'nodes/new', element: <NodeCreateDialog /> },
+          { path: 'nodes/:nodeId', element: <NodeDetailDialog /> },
+        ],
       },
     ],
   },

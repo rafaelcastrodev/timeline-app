@@ -8,7 +8,8 @@ import {
 } from '@/components/ui/dialog'
 
 interface RouteDialogProps {
-  title: string
+  /** Dialog heading and accessible name. May be rendered Markdown (node titles). */
+  title: ReactNode
   description?: string
   /** Called on X, Esc and overlay click. Typically navigates away from the dialog's route. */
   onClose: () => void

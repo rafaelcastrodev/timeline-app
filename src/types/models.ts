@@ -63,6 +63,11 @@ export const nodeInputSchema = nodeFields.extend({
 })
 export type NodeInput = z.input<typeof nodeInputSchema>
 
+/** Node form: every editable field present, no defaults. */
+export const nodeFormSchema = nodeFields
+export type NodeFormInput = z.input<typeof nodeFormSchema>
+export type NodeFormValues = z.output<typeof nodeFormSchema>
+
 /** Partial node update. No defaults, so absent fields stay unchanged. */
 export const nodeChangesSchema = nodeFields.partial()
 export type NodeChanges = z.input<typeof nodeChangesSchema>

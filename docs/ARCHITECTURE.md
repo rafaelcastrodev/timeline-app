@@ -86,7 +86,7 @@ db.version(1).stores({
 
 ### Code layout
 
-- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`). Titles are trimmed and required.
+- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
 - Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
 - Test helper `setupTestDatabase()` (`src/test/db.ts`) clears tables and fakes only `Date`; timers stay real for fake-indexeddb.
@@ -102,10 +102,10 @@ db.version(1).stores({
 /timelines/:timelineId/nodes/:nodeId   node detail (read mode, "Edit" switches to the form in place)
 ```
 
-- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router. `AppLayout` (`src/app/app-layout.tsx`) renders the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
+- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router. `AppLayout` (`src/app/app-layout.tsx`) renders the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
 - Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout shows the list when no `:timelineId` param is matched and the detail pane otherwise (CSS `hidden` + `lg:` overrides, no media-query hook).
 - Desktop (≥ `lg`): two panes, each scrolling on its own. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state.
-- Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016).
+- Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016). Its title is a `ReactNode`, so node titles render as inline Markdown.
 - Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). Creating a timeline replaces `/timelines/new` with the new timeline's route.
 - Detail views are routes (not only component state), so the browser back button closes them and the unsaved-changes guard can intercept it.
 
@@ -128,7 +128,16 @@ db.version(1).stores({
 - Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
 - Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
 - Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
-- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`, links as text) + description excerpt clamped to 3 lines + grip icon. The grip is a visual placeholder until phase 6 turns it into the drag handle; links render as text because the card becomes clickable in phase 5.
+- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is a visual placeholder until phase 6 turns it into the drag handle.
+
+## Node detail and forms
+
+Components live in `src/features/nodes`.
+
+- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description). Saving appends the node at the end and closes the route back to the timeline.
+- Detail (`NodeDetailDialog`, `nodes/:nodeId`): read mode shows the title (inline Markdown, as the dialog title), the description (`MarkdownBlock`) and the "Edit" and "Delete" actions. While the node loads the dialog shows skeletons; a node that does not exist or belongs to another timeline shows "Node not found".
+- "Edit" swaps the read view for `NodeForm` inside the same dialog (component state, no route change) and focuses the title. Save and Cancel return to read mode and focus "Edit". Closing the dialog from edit mode closes the route (D-021).
+- Delete asks for confirmation (`ConfirmDialog`), deletes the node, then closes the route.
 
 ## Markdown
 
@@ -143,13 +152,13 @@ Components live in `src/components/markdown` (re-exported from `index.ts`). All 
 
 ## Unsaved-changes guard
 
-Shared hook `useUnsavedChangesGuard(isDirty)` used by the timeline form and the node form:
+Shared hook `useUnsavedChangesGuard(isDirty)` (`src/hooks/use-unsaved-changes-guard.tsx`), called by `TimelineForm` and `NodeForm` with react-hook-form's `isDirty`. The form renders the hook's confirmation dialog ("Discard unsaved changes?", actions "Discard" and "Keep editing"; built on `ConfirmDialog`, whose `onCancel` runs only when it is dismissed without confirming). D-020.
 
-1. Dialog/Drawer close (X, Esc, overlay click): intercept `onOpenChange(false)`; if dirty, open the confirm AlertDialog.
-2. In-app navigation and browser back: React Router `useBlocker(isDirty)`; show the same AlertDialog, then `proceed()` or `reset()`.
+1. Route dialog close (X, Esc, overlay click): route dialogs close by navigating (`useCloseRoute`), so the navigation blocker below catches them; there is no separate `onOpenChange` interception.
+2. In-app navigation and browser back: React Router `useBlocker` while dirty; "Discard" calls `proceed()`, "Keep editing" calls `reset()`.
 3. Tab close/reload: `beforeunload` listener while dirty (the browser shows its own generic message; text cannot be customized).
-4. Cancel button: same confirmation.
-5. After a successful save, the form resets its dirty state before navigating, so the guard does not fire.
+4. Cancel button: `confirmDiscard(action)` asks when dirty, then runs the action with the blocker bypassed, so a Cancel that navigates is not asked twice. Cancel either closes the route or, in node edit mode, returns to read mode.
+5. After a successful save, the form resets its dirty state and calls `onSaved` through `bypass(action)`: the registered blocker still holds the previous dirty value until the next render. A bypass lasts until the dirty flag changes.
 
 ## Drag and drop
 

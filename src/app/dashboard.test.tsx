@@ -56,12 +56,14 @@ describe('dashboard', () => {
     )
   })
 
-  it('cancel closes the create dialog and writes nothing', async () => {
+  it('cancel closes the create dialog after confirming and writes nothing', async () => {
     const { router, user } = renderApp()
     await user.click(await screen.findByRole('link', { name: 'New timeline' }))
     const dialog = await screen.findByRole('dialog')
     await user.type(within(dialog).getByLabelText('Title'), 'Draft')
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    const confirm = await screen.findByRole('alertdialog', { name: 'Discard unsaved changes?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Discard' }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

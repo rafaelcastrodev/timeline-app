@@ -2,10 +2,10 @@
 
 ## Current status
 
-- Active phase: **5. Node CRUD + detail** (not started).
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action). 70 unit/integration tests; E2E dashboard and timeline view flows pass on mobile and desktop.
-- The "+ Node" and "Add first node" links already point to `nodes/new`; that route does not exist yet and phase 5 adds it. Node cards are not clickable yet.
-- Next step: phase 5, first item.
+- Active phase: **6. Drag and drop** (not started).
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms). 81 unit/integration tests; E2E dashboard, timeline view and node flows pass on mobile and desktop.
+- The card's grip icon is still a visual placeholder (`data-slot="drag-handle"`); phase 6 turns it into the drag handle, a button above the card's link overlay.
+- Next step: phase 6, first item.
 
 ## Phases
 
@@ -57,11 +57,11 @@ Done when: E2E on mobile and desktop: create several timelines, scroll loads mor
 Done when: both orientations render correctly at 360 px and desktop widths; orientation survives reload.
 
 ### 5. Node CRUD + detail
-- [ ] Node detail route: read mode (full Markdown), "Edit" switches to form in place.
-- [ ] Node create/edit form (react-hook-form + zod).
-- [ ] Full screen on mobile, Dialog on desktop.
-- [ ] Delete node with confirmation.
-- [ ] Unsaved-changes guard (`useUnsavedChangesGuard`) on node and timeline forms: dialog close, Cancel, in-app navigation, browser back, `beforeunload`.
+- [x] Node detail route: read mode (full Markdown), "Edit" switches to form in place.
+- [x] Node create/edit form (react-hook-form + zod).
+- [x] Full screen on mobile, Dialog on desktop.
+- [x] Delete node with confirmation.
+- [x] Unsaved-changes guard (`useUnsavedChangesGuard`) on node and timeline forms: dialog close, Cancel, in-app navigation, browser back, `beforeunload`.
 
 Done when: E2E: create/view/edit/delete a node; with a dirty form, Esc/X/back/Cancel asks for confirmation; with a clean form or after saving, it does not.
 

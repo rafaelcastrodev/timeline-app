@@ -20,6 +20,8 @@ interface ConfirmDialogProps {
   destructive?: boolean
   /** Runs on confirm. The dialog closes when it resolves and stays open with an error if it throws. */
   onConfirm: () => Promise<void> | void
+  /** Runs when the dialog is dismissed without confirming (Cancel, Esc). */
+  onCancel?: () => void
 }
 
 export function ConfirmDialog({
@@ -31,13 +33,17 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   destructive = false,
   onConfirm,
+  onCancel,
 }: ConfirmDialogProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleOpenChange = (next: boolean) => {
     if (pending) return
-    if (!next) setError(null)
+    if (!next) {
+      setError(null)
+      onCancel?.()
+    }
     onOpenChange(next)
   }
 

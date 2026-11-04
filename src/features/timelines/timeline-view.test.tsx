@@ -37,11 +37,13 @@ describe('timeline view', () => {
 
   it('renders node cards in position order with inline title and excerpt', async () => {
     const timeline = await createTimeline({ title: 'Trip' })
-    await createNode(timeline.id, {
-      title: 'First **day**',
-      description: 'Arrive [here](https://example.com)',
-    })
-    await createNode(timeline.id, { title: 'Second day' })
+    const nodes = [
+      await createNode(timeline.id, {
+        title: 'First **day**',
+        description: 'Arrive [here](https://example.com)',
+      }),
+      await createNode(timeline.id, { title: 'Second day' }),
+    ]
     renderTimeline(timeline.id)
 
     const list = await nodeList()
@@ -50,8 +52,12 @@ describe('timeline view', () => {
     expect(within(items[0]!).getByRole('heading', { level: 3 })).toHaveTextContent('First day')
     expect(within(items[0]!).getByText('day').tagName).toBe('STRONG')
     expect(items[0]).toHaveTextContent('Arrive here')
-    // Cards are going to be clickable: no nested links.
-    expect(within(list).queryByRole('link')).not.toBeInTheDocument()
+    // Each card has one link (its title) to the node detail; Markdown links render as text.
+    expect(
+      within(list)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(nodes.map((node) => `/timelines/${timeline.id}/nodes/${node.id}`))
     expect(within(items[1]!).getByRole('heading', { level: 3 })).toHaveTextContent('Second day')
     expect(items[1]!.querySelector('[data-slot="markdown-excerpt"]')).toBeNull()
     expect(items[0]!.querySelector('[data-slot="drag-handle"]')).not.toBeNull()

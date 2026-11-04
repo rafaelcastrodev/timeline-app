@@ -70,3 +70,15 @@ Rationale: latest stable at implementation time (D-002 names React Router withou
 ## D-019 — Orientation toggle is a regular timeline update (2026-11-03)
 The header toggle saves the orientation with `updateTimeline`, which bumps the timeline's `updated_at`, so switching the view moves the timeline to the top of the dashboard.
 Rationale: orientation is a persisted field of the timeline, also editable in its form; `updated_at` tracks any activity on the timeline (D-009, D-012); one update path in the repository.
+
+## D-020 — Unsaved-changes guard is built on the navigation blocker (2026-11-03)
+Route dialogs close by navigating, so X, Esc, overlay click and browser back are all caught by `useBlocker` while the form is dirty; the dialog's `onOpenChange` is not intercepted separately. Cancel confirms inside the form and then runs with the blocker bypassed. After a save, the form resets and navigates through the same bypass.
+Rationale: one interception path for every way of leaving a route dialog, and the same confirmation dialog for all of them. The bypass prevents a second prompt after Cancel and a false prompt after saving, because `useBlocker` registers its function in an effect and still sees the old dirty value until the next render.
+
+## D-021 — Node edit mode is component state (2026-11-03)
+"Edit" in the node detail swaps the read view for the form without a route change; Save and Cancel return to read mode. Creating a node closes the dialog back to the timeline.
+Rationale: D-005 asks for editing in place; no extra route or history entry for a mode switch. Back or closing the dialog from edit mode closes the detail (guarded while dirty). Returning to read mode after saving shows the rendered result; after creating, the new card is visible at the end of the timeline.
+
+## D-022 — Node card is clickable through a stretched title link (2026-11-03)
+The card title is the only link; its `::after` overlay covers the card. The card is not wrapped in a link.
+Rationale: the whole card is a click target with the title as the link's accessible name, and the phase 6 drag handle can be a button inside the card without nesting interactive content in a link.
