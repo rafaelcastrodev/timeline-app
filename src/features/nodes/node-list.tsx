@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { Orientation, TimelineNode } from '@/types/models'
+import type { NodeLayer, Orientation, TimelineNode } from '@/types/models'
 import { NodeCard } from './node-card'
 import { markerClasses, nodeColorClasses } from './node-colors'
 import { useNodeOrder } from './use-node-order'
@@ -31,6 +31,8 @@ interface NodeListProps {
   timelineId: string
   nodes: TimelineNode[]
   orientation: Orientation
+  /** Nodes of other layers are dimmed. */
+  focusedLayer?: NodeLayer
 }
 
 const lockToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 })
@@ -46,9 +48,10 @@ const screenReaderInstructions: ScreenReaderInstructions = {
  * Nodes in manual order along a timeline line, sortable by drag and drop from each card's handle
  * (mouse, touch after a long press, keyboard). Vertical: cards stacked to the right of a vertical
  * line. Horizontal: a row of fixed-width cards under a horizontal line, scrolling horizontally
- * with snap points (snapping is off while dragging so auto-scroll is not pulled back).
+ * with snap points (snapping is off while dragging so auto-scroll is not pulled back). Nodes
+ * outside the focused layer are dimmed, back to full opacity while hovered, focused or dragged.
  */
-export function NodeList({ timelineId, nodes, orientation }: NodeListProps) {
+export function NodeList({ timelineId, nodes, orientation, focusedLayer }: NodeListProps) {
   const { orderedNodes, ids, move } = useNodeOrder(timelineId, nodes)
   const [dragging, setDragging] = useState(false)
   const lastOver = useRef<UniqueIdentifier | null>(null)
@@ -85,7 +88,12 @@ export function NodeList({ timelineId, nodes, orientation }: NodeListProps) {
   }
 
   const items = orderedNodes.map((node) => (
-    <SortableNode key={node.id} node={node} orientation={orientation} />
+    <SortableNode
+      key={node.id}
+      node={node}
+      orientation={orientation}
+      dimmed={focusedLayer !== undefined && node.layer !== focusedLayer}
+    />
   ))
 
   return (
@@ -132,7 +140,15 @@ export function NodeList({ timelineId, nodes, orientation }: NodeListProps) {
   )
 }
 
-function SortableNode({ node, orientation }: { node: TimelineNode; orientation: Orientation }) {
+interface SortableNodeProps {
+  node: TimelineNode
+  orientation: Orientation
+  dimmed: boolean
+}
+
+const dimmedClasses = 'opacity-40 focus-within:opacity-100 hover:opacity-100'
+
+function SortableNode({ node, orientation, dimmed }: SortableNodeProps) {
   const {
     attributes,
     listeners,
@@ -145,6 +161,10 @@ function SortableNode({ node, orientation }: { node: TimelineNode; orientation: 
   // Translate only: cards differ in height, and scaling would distort them.
   const style = { transform: CSS.Translate.toString(transform), transition }
   const dragHandle = { ref: setActivatorNodeRef, ...attributes, ...listeners }
+  const layerProps = {
+    'data-layer': node.layer,
+    'data-dimmed': dimmed || undefined,
+  }
 
   if (orientation === 'horizontal') {
     return (
@@ -152,9 +172,11 @@ function SortableNode({ node, orientation }: { node: TimelineNode; orientation: 
         ref={setNodeRef}
         style={style}
         data-dragging={isDragging || undefined}
+        {...layerProps}
         className={cn(
-          'relative flex w-64 shrink-0 snap-start flex-col gap-3 md:w-72',
+          'relative flex w-64 shrink-0 snap-start flex-col gap-3 transition-opacity md:w-72',
           isDragging && 'z-20',
+          dimmed && !isDragging && dimmedClasses,
         )}
       >
         <NodeMarker node={node} className="relative ml-4" />
@@ -168,7 +190,12 @@ function SortableNode({ node, orientation }: { node: TimelineNode; orientation: 
       ref={setNodeRef}
       style={style}
       data-dragging={isDragging || undefined}
-      className={cn('relative max-w-2xl', isDragging && 'z-20')}
+      {...layerProps}
+      className={cn(
+        'relative max-w-2xl transition-opacity',
+        isDragging && 'z-20',
+        dimmed && !isDragging && dimmedClasses,
+      )}
     >
       <NodeMarker node={node} className="absolute top-4 -left-[1.375rem]" />
       <NodeCard node={node} dragHandle={dragHandle} isDragging={isDragging} />

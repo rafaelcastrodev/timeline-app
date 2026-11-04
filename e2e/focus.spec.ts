@@ -24,6 +24,7 @@ async function seedTimeline(page: Page): Promise<string> {
       title,
       description: '',
       color: null,
+      layer: 1,
       position,
       created_at: AT,
       updated_at: AT,

@@ -22,6 +22,7 @@ Personal application. No backend: all data stays in the browser (IndexedDB). JSO
 | F12 | Timestamps | Timelines and nodes have `created_at` (set once) and `updated_at`. Node `created_at` is preserved by import. |
 | F13 | Markdown | Every user-entered text field (titles and descriptions) is Markdown. Titles render inline formatting only. |
 | F14 | Node card color | The node form has a color picker showing the 500 shade of each chromatic Tailwind color, plus a default (no color). On the timeline the card background uses a lighter tone of the chosen color in light mode and a dark tint of it in dark mode. The node's marker on the timeline line uses the same color. In the node detail and its forms, the title sits in a header bar that stays at the top while scrolling and uses the card color. |
+| F15 | Node layers | Each node has a layer from 1 to 5 (default 1), chosen with a select in the node form. The timeline view has a button that switches the focused layer; nodes of the other layers are shown with reduced opacity. Visual only: layers do not change order, filtering or export content beyond the field itself. |
 
 ## Non-functional
 

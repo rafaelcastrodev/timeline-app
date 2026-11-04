@@ -27,6 +27,7 @@ async function openTimeline(page: Page, orientation: Orientation): Promise<strin
       title,
       description: `About ${title}`,
       color: null,
+      layer: 1,
       position,
       created_at: AT,
       updated_at: AT,

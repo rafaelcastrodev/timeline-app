@@ -9,7 +9,7 @@ import {
   SearchXIcon,
   Trash2Icon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Outlet, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
@@ -29,7 +29,8 @@ import { NodeList } from '@/features/nodes/node-list'
 import { downloadTimeline } from '@/features/transfer/export'
 import { useTimelineImport } from '@/features/transfer/use-timeline-import'
 import { pageHeadingProps } from '@/lib/focus'
-import type { Timeline } from '@/types/models'
+import type { NodeLayer, Timeline, TimelineNode } from '@/types/models'
+import { LayerFocusButton } from './layer-focus-button'
 import { OrientationToggle } from './orientation-toggle'
 
 function BackToList() {
@@ -80,10 +81,32 @@ export function TimelineView() {
   return <TimelineDetail timeline={timeline} />
 }
 
+/**
+ * Layer focus of the timeline view (component state, not persisted). Defaults to the lowest layer
+ * in use; a focused layer that no node uses anymore falls back to it too. The focus belongs to
+ * one timeline, so selecting another one starts over.
+ */
+function useLayerFocus(timelineId: string, nodes: TimelineNode[] | undefined) {
+  const [focus, setFocus] = useState<{ timelineId: string; layer: NodeLayer } | null>(null)
+  const layers = useMemo(
+    () => [...new Set((nodes ?? []).map((node) => node.layer))].sort((a, b) => a - b),
+    [nodes],
+  )
+  const chosen = focus?.timelineId === timelineId ? focus.layer : undefined
+  const focusedLayer = chosen !== undefined && layers.includes(chosen) ? chosen : layers[0]
+  return {
+    layers,
+    focusedLayer,
+    setFocusedLayer: (layer: NodeLayer) => setFocus({ timelineId, layer }),
+  }
+}
+
 function TimelineDetail({ timeline }: { timeline: Timeline }) {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const replaceFlow = useTimelineImport({ mode: 'replace', timelineId: timeline.id })
+  const nodes = useNodes(timeline.id)
+  const { layers, focusedLayer, setFocusedLayer } = useLayerFocus(timeline.id, nodes)
 
   return (
     <div className="flex flex-col">
@@ -92,6 +115,10 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
         <h2 {...pageHeadingProps} className="min-w-0 flex-1 text-lg font-semibold outline-none">
           <MarkdownInline>{timeline.title}</MarkdownInline>
         </h2>
+        {/* Shown once the nodes use more than one layer. */}
+        {focusedLayer !== undefined && layers.length > 1 && (
+          <LayerFocusButton layers={layers} value={focusedLayer} onChange={setFocusedLayer} />
+        )}
         <OrientationToggle
           value={timeline.orientation}
           onChange={(orientation) => {
@@ -160,7 +187,7 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
 
       {/* Bottom padding keeps the last card clear of the floating action button on mobile. */}
       <div className="pb-20 lg:pb-4">
-        <TimelineNodes timeline={timeline} />
+        <TimelineNodes timeline={timeline} nodes={nodes} focusedLayer={focusedLayer} />
       </div>
 
       <ConfirmDialog
@@ -184,9 +211,13 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
   )
 }
 
-function TimelineNodes({ timeline }: { timeline: Timeline }) {
-  const nodes = useNodes(timeline.id)
+interface TimelineNodesProps {
+  timeline: Timeline
+  nodes: TimelineNode[] | undefined
+  focusedLayer: NodeLayer | undefined
+}
 
+function TimelineNodes({ timeline, nodes, focusedLayer }: TimelineNodesProps) {
   if (nodes === undefined) {
     return (
       <div aria-busy="true" aria-label="Loading nodes" className="flex flex-col gap-4 p-4 lg:px-6">
@@ -212,5 +243,12 @@ function TimelineNodes({ timeline }: { timeline: Timeline }) {
     )
   }
 
-  return <NodeList timelineId={timeline.id} nodes={nodes} orientation={timeline.orientation} />
+  return (
+    <NodeList
+      timelineId={timeline.id}
+      nodes={nodes}
+      orientation={timeline.orientation}
+      focusedLayer={focusedLayer}
+    />
+  )
 }

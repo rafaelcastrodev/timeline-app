@@ -4,7 +4,7 @@ import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { describe, expect, it } from 'vitest'
 import { routes } from '@/app/routes'
-import { createNode, createTimeline, getTimeline } from '@/db'
+import { createNode, createTimeline, getTimeline, updateNode } from '@/db'
 import { setupTestDatabase } from '@/test/db'
 
 setupTestDatabase()
@@ -98,5 +98,60 @@ describe('timeline view', () => {
       'true',
     )
     expect(await getTimeline(timeline.id)).toMatchObject({ orientation: 'horizontal' })
+  })
+
+  it('has no layer focus button while every node is on one layer', async () => {
+    const timeline = await createTimeline({ title: 'Flat' })
+    await createNode(timeline.id, { title: 'A', layer: 2 })
+    await createNode(timeline.id, { title: 'B', layer: 2 })
+    renderTimeline(timeline.id)
+
+    const items = within(await nodeList()).getAllByRole('listitem')
+    expect(items.every((item) => !item.hasAttribute('data-dimmed'))).toBe(true)
+    expect(screen.queryByRole('button', { name: /^Focused layer/ })).not.toBeInTheDocument()
+  })
+
+  it('focuses the lowest layer and cycles through the layers in use, dimming the others', async () => {
+    const timeline = await createTimeline({ title: 'Plot' })
+    await createNode(timeline.id, { title: 'Main', layer: 1 })
+    await createNode(timeline.id, { title: 'Side', layer: 4 })
+    await createNode(timeline.id, { title: 'Echo', layer: 2 })
+    const { user } = renderTimeline(timeline.id)
+
+    const dimmed = async () =>
+      within(await nodeList())
+        .getAllByRole('listitem')
+        .filter((item) => item.hasAttribute('data-dimmed'))
+        .map((item) => within(item).getByRole('heading', { level: 3 }).textContent)
+
+    await waitFor(async () => expect(await dimmed()).toEqual(['Side', 'Echo']))
+    const button = screen.getByRole('button', { name: 'Focused layer 1' })
+    expect(button).toHaveAttribute('title', 'Switch to layer 2')
+
+    await user.click(button)
+    expect(button).toHaveAccessibleName('Focused layer 2')
+    expect(await dimmed()).toEqual(['Main', 'Side'])
+
+    await user.click(button)
+    expect(button).toHaveAccessibleName('Focused layer 4')
+    expect(await dimmed()).toEqual(['Main', 'Echo'])
+
+    await user.click(button)
+    expect(button).toHaveAccessibleName('Focused layer 1')
+    expect(await dimmed()).toEqual(['Side', 'Echo'])
+  })
+
+  it('falls back to the lowest layer when the focused layer is no longer used', async () => {
+    const timeline = await createTimeline({ title: 'Shrink' })
+    await createNode(timeline.id, { title: 'Main', layer: 1 })
+    const side = await createNode(timeline.id, { title: 'Side', layer: 3 })
+    await createNode(timeline.id, { title: 'Other', layer: 5 })
+    const { user } = renderTimeline(timeline.id)
+
+    await user.click(await screen.findByRole('button', { name: 'Focused layer 1' }))
+    expect(screen.getByRole('button', { name: 'Focused layer 3' })).toBeInTheDocument()
+    await updateNode(side.id, { layer: 1 })
+
+    expect(await screen.findByRole('button', { name: 'Focused layer 1' })).toBeInTheDocument()
   })
 })

@@ -7,7 +7,7 @@
 | Build | Vite + React + TypeScript (strict) | TypeScript pinned to 6.0.x until typescript-eslint supports 7 (D-010) |
 | Styling | Tailwind CSS v4 | |
 | Theme | `next-themes` | Light, dark or system; `dark` class on `<html>` (D-029) |
-| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
+| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Select, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` | Mouse, touch and keyboard sensors (D-023) |
 | Routing | React Router 8, data router (`createBrowserRouter`) | Required for `useBlocker`. `RouterProvider` comes from `react-router/dom`, everything else from `react-router` |
@@ -63,6 +63,7 @@ interface TimelineNode {
   title: string              // Markdown (inline subset)
   description: string        // Markdown
   color: NodeColor | null    // card color (Tailwind hue name); null = default card
+  layer: NodeLayer           // 1..5, default 1; the timeline view can focus one layer
   position: number           // 0..n-1, manual order within the timeline
   created_at: string         // ISO 8601, set once, preserved by import
   updated_at: string         // ISO 8601
@@ -71,7 +72,9 @@ interface TimelineNode {
 
 `NodeColor` is one of the chromatic Tailwind hues: `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose` (`NODE_COLORS`). Neutral palettes (slate, gray, zinc, …) are excluded (D-032).
 
-### Dexie schema (v2)
+`NodeLayer` is an integer from 1 to 5 (`NODE_LAYERS`, `DEFAULT_NODE_LAYER = 1`, D-037).
+
+### Dexie schema (v3)
 
 ```ts
 const stores = {
@@ -80,9 +83,10 @@ const stores = {
 }
 db.version(1).stores(stores)
 db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` */)
+db.version(3).stores(stores).upgrade(/* nodes without `layer` get `layer: 1` */)
 ```
 
-`color` is not indexed; v2 only migrates existing nodes.
+`color` and `layer` are not indexed; v2 and v3 only migrate existing nodes.
 
 ### Rules
 
@@ -95,7 +99,7 @@ db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` 
 
 ### Code layout
 
-- zod schemas and inferred types: `src/types/models.ts`. `NODE_COLORS` / `nodeColorSchema` (type `NodeColor`); record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`; node `color` defaults to `null`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
+- zod schemas and inferred types: `src/types/models.ts`. `NODE_COLORS` / `nodeColorSchema` (type `NodeColor`); `NODE_LAYERS` / `nodeLayerSchema` (type `NodeLayer`); record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`; node `color` defaults to `null`, `layer` to `1`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
 - Export file schema: `src/types/transfer.ts` (`timelineFileSchema`, type `TimelineFile`), built from the shared field schemas in `models.ts`.
 - Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, `src/db/transfer.ts` (`exportTimeline`, `importTimeline`, `replaceTimeline`), re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
@@ -131,7 +135,8 @@ db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` 
 
 ## Timeline view
 
-- Header: back action (mobile), title (`h2`), orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
+- Header: back action (mobile), title (`h2`), layer focus button (only while the nodes use more than one layer), orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
+- Layer focus (D-037): `LayerFocusButton` (outline button, Lucide `Layers` icon + the focused layer number, `aria-label` "Focused layer N", tooltip "Switch to layer M") moves the focus to the next layer in use, ascending, wrapping around. The focus is component state of the timeline view (`useLayerFocus`), not persisted: it starts at the lowest layer in use, falls back to it when no node uses the focused layer anymore, and starts over when another timeline is selected. In `NodeList`, each `<li>` (card and marker) of another layer gets `data-dimmed` and `opacity-40`; it returns to full opacity while hovered, while it contains focus and while dragged. Dimmed cards are below WCAG AA text contrast by design (light excerpt 1.67:1, dark 2.41:1), so the axe spec scans a timeline with a single layer.
 - Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query. A failed write shows an error toast.
 - "+ Node": one link to `nodes/new`, a floating action button (bottom-right, icon only) below `lg` and a regular header button from `lg` up. The node area has bottom padding below `lg` so the last card stays clear of it.
 - Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails; optional `children` render between the description and the actions), then replaces the route with `/`.
@@ -144,8 +149,9 @@ db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` 
 
 Components live in `src/features/nodes`.
 
-- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description, card color). Saving appends the node at the end and closes the route back to the timeline.
+- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description, layer, card color). Saving appends the node at the end and closes the route back to the timeline.
 - Detail (`NodeDetailDialog`, `nodes/:nodeId`): read mode shows the title (inline Markdown, as the dialog title), the description (`MarkdownBlock`) and the "Edit" and "Delete" actions. While the node loads the dialog shows skeletons; a node that does not exist or belongs to another timeline shows "Node not found".
+- Layer: a shadcn/ui Select labeled "Layer" with the options 1 to 5 (stored as a number) and the hint "The timeline can focus one layer and dim the others."
 - Card color (`NodeColorPicker`): a fieldset "Card color" with a single-select Toggle Group of round swatches (radio semantics): "Default" (card background) followed by the `500` shade of each `NodeColor` (`--node-color`), labeled with the color name. The selected swatch shows a check icon (`neutral-950`, at least 4.3:1 on every `500` shade) and an outer ring. Selecting the active swatch again keeps it.
 - Header color (D-036): in read mode the dialog header uses the node's card surface (`nodeHeaderClasses`: the card background without hover, with the colored-card `--muted-foreground`); uncolored nodes keep `bg-popover`. In the create and edit forms the header previews the color picked in the form (`NodeForm` `onColorChange`); leaving the edit form returns to the stored color. Theme text colors stay legible on every hue (lowest: title 8.43:1, links 6.99:1, both dark yellow).
 - "Edit" swaps the read view for `NodeForm` inside the same dialog (component state, no route change) and focuses the title. Save and Cancel return to read mode and focus "Edit". Closing the dialog from edit mode closes the route (D-021).
@@ -201,7 +207,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
     "updated_at": "…"
   },
   "nodes": [
-    { "id": "…", "title": "…", "description": "…", "color": "blue", "position": 0, "created_at": "…", "updated_at": "…" }
+    { "id": "…", "title": "…", "description": "…", "color": "blue", "layer": 1, "position": 0, "created_at": "…", "updated_at": "…" }
   ]
 }
 ```
@@ -209,7 +215,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 - Export: one timeline per file; nodes sorted by `position`, without `timeline_id`. `exportTimeline` reads the timeline and its nodes in one read transaction. File name: `timeline-<slug>-<yyyymmdd>.json` (`exportFileName`, local date of `exported_at`; `slugify` in `src/lib/slug.ts` keeps link text, drops link targets and diacritics, caps at 50 chars, falls back to `untitled`). The JSON is indented and saved through an object URL and a temporary `<a download>` (`downloadTimeline`, `src/features/transfer/export.ts`).
 - Validation (`parseTimelineFile`, `src/features/transfer/parse.ts`): files over 10 MB are rejected before reading; then JSON parse, `format`, supported `schema_version`, and the zod schema (required fields, UUID ids, ISO dates, `orientation` enum, titles trimmed and non-empty, `position` a non-negative integer). Unknown fields are stripped. Failures throw `InvalidImportFileError` with a user-facing message; schema errors list up to 3 issues as `path: message` (e.g. `nodes[1].title: Title is required`) and a count of the rest.
 - Node order on import comes from the array order; the `position` values are validated but not used.
-- Node `color` is optional in the file: absent means `null` (files exported before card colors), otherwise it must be `null` or a `NodeColor`. Export always writes it. Import as new and replace keep it.
+- Node `color` is optional in the file: absent means `null` (files exported before card colors), otherwise it must be `null` or a `NodeColor`. Node `layer` is optional too: absent means `1` (files exported before layers), otherwise an integer from 1 to 5. Export always writes both. Import as new and replace keep them.
 - The import repository functions re-validate their input with `timelineFileSchema`; all writes run in one transaction, so on any error nothing is written.
 
 ### Import flow (UI)

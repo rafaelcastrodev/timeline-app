@@ -32,6 +32,7 @@ async function seedTimeline(page: Page): Promise<string> {
         (_, line) => `Line ${line + 1} of stop ${position + 1}`,
       ).join('\n\n'),
       color: null,
+      layer: 1,
       position,
       created_at: AT,
       updated_at: AT,

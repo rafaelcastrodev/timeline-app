@@ -84,6 +84,22 @@ describe('node repository', () => {
     expect(await countNodes(timeline.id)).toBe(0)
   })
 
+  it('creates nodes on layer 1 unless a layer is given, and updates the layer', async () => {
+    const { timeline } = await setup([])
+    const node = await createNode(timeline.id, { title: 'a' })
+    expect(node.layer).toBe(1)
+    const deep = await createNode(timeline.id, { title: 'b', layer: 5 })
+    expect(await getNode(deep.id)).toMatchObject({ layer: 5 })
+    expect(await updateNode(node.id, { layer: 3 })).toMatchObject({ layer: 3 })
+    expect(await updateNode(node.id, { title: 'c' })).toMatchObject({ title: 'c', layer: 3 })
+  })
+
+  it.each([0, 6, 2.5])('rejects layer %s', async (layer) => {
+    const { timeline } = await setup([])
+    await expect(createNode(timeline.id, { title: 'x', layer })).rejects.toThrow()
+    expect(await countNodes(timeline.id)).toBe(0)
+  })
+
   it('creating a node bumps the parent updated_at', async () => {
     const timeline = await createTimeline({ title: 'T' })
     advance()

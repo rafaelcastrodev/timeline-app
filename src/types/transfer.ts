@@ -1,5 +1,12 @@
 import { z } from 'zod'
-import { isoDateTimeSchema, nodeColorSchema, orientationSchema, titleSchema } from './models'
+import {
+  DEFAULT_NODE_LAYER,
+  isoDateTimeSchema,
+  nodeColorSchema,
+  nodeLayerSchema,
+  orientationSchema,
+  titleSchema,
+} from './models'
 
 export const TIMELINE_FILE_FORMAT = 'timeline-app'
 export const TIMELINE_FILE_SCHEMA_VERSION = 1
@@ -16,13 +23,15 @@ const fileTimelineSchema = z.object({
 
 /**
  * Node in an export file. Import uses the array order, not `position`, for the new order.
- * `color` is optional (files exported before card colors have none) and defaults to `null`.
+ * `color` and `layer` are optional (files exported before those fields have none) and default to
+ * `null` and `1`.
  */
 const fileNodeSchema = z.object({
   id: z.uuid(),
   title: titleSchema,
   description: z.string(),
   color: nodeColorSchema.nullable().default(null),
+  layer: nodeLayerSchema.default(DEFAULT_NODE_LAYER),
   position: z.int().nonnegative(),
   created_at: isoDateTimeSchema,
   updated_at: isoDateTimeSchema,

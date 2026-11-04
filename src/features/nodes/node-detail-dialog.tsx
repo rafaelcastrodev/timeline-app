@@ -69,7 +69,12 @@ export function NodeDetailDialog() {
         onClose={close}
       >
         <NodeForm
-          defaultValues={{ title: node.title, description: node.description, color: node.color }}
+          defaultValues={{
+            title: node.title,
+            description: node.description,
+            color: node.color,
+            layer: node.layer,
+          }}
           submitLabel="Save"
           autoFocusTitle
           onSubmit={(values) => updateNode(node.id, values)}

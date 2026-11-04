@@ -15,6 +15,15 @@ import {
 import { Input } from '@/components/ui/input'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  DEFAULT_NODE_LAYER,
+  NODE_LAYERS,
   nodeFormSchema,
   type NodeFormInput,
   type NodeColor,
@@ -23,7 +32,12 @@ import {
 } from '@/types/models'
 import { NodeColorPicker } from './node-color-picker'
 
-const emptyValues: NodeFormInput = { title: '', description: '', color: null }
+const emptyValues: NodeFormInput = {
+  title: '',
+  description: '',
+  color: null,
+  layer: DEFAULT_NODE_LAYER,
+}
 
 interface NodeFormProps {
   defaultValues?: NodeFormInput
@@ -101,6 +115,40 @@ export function NodeForm({
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                 />
+              </Field>
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="layer"
+            render={({ field }) => (
+              <Field>
+                <FieldLabel htmlFor={`${id}-layer`}>Layer</FieldLabel>
+                <Select
+                  name={field.name}
+                  value={String(field.value)}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                >
+                  <SelectTrigger
+                    id={`${id}-layer`}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    className="w-24"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NODE_LAYERS.map((layer) => (
+                      <SelectItem key={layer} value={String(layer)}>
+                        {layer}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  The timeline can focus one layer and dim the others.
+                </FieldDescription>
               </Field>
             )}
           />

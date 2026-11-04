@@ -26,6 +26,12 @@ export const NODE_COLORS = [
 export const nodeColorSchema = z.enum(NODE_COLORS)
 export type NodeColor = z.infer<typeof nodeColorSchema>
 
+/** Story layers a node can belong to (`1` is the default). The timeline view can focus one layer. */
+export const NODE_LAYERS = [1, 2, 3, 4, 5] as const
+export const DEFAULT_NODE_LAYER = 1
+export const nodeLayerSchema = z.int().min(1).max(NODE_LAYERS.length)
+export type NodeLayer = z.infer<typeof nodeLayerSchema>
+
 export const isoDateTimeSchema = z.iso.datetime({ offset: true })
 const isoDateTime = isoDateTimeSchema
 
@@ -47,6 +53,7 @@ export const timelineNodeSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
   color: nodeColorSchema.nullable(),
+  layer: nodeLayerSchema,
   position: z.int().nonnegative(),
   created_at: isoDateTime,
   updated_at: isoDateTime,
@@ -67,6 +74,7 @@ const nodeFields = z.object({
   title: titleInput,
   description: z.string(),
   color: nodeColorSchema.nullable(),
+  layer: nodeLayerSchema,
 })
 
 /** User-editable timeline fields for creation (forms, repository input). */
@@ -89,6 +97,7 @@ export type TimelineChanges = z.input<typeof timelineChangesSchema>
 export const nodeInputSchema = nodeFields.extend({
   description: nodeFields.shape.description.default(''),
   color: nodeFields.shape.color.default(null),
+  layer: nodeFields.shape.layer.default(DEFAULT_NODE_LAYER),
 })
 export type NodeInput = z.input<typeof nodeInputSchema>
 

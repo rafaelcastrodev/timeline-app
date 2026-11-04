@@ -185,6 +185,40 @@ describe('node create color', () => {
   })
 })
 
+describe('node layer', () => {
+  it('creates a node on the chosen layer and edits it', async () => {
+    const { timeline } = await seed()
+    const { router, user } = renderAt(`/timelines/${timeline.id}/nodes/new`)
+    const form = await screen.findByRole('dialog', { name: 'New node' })
+    await user.type(within(form).getByLabelText('Title'), 'Deep')
+    const layer = within(form).getByRole('combobox', { name: 'Layer' })
+    expect(layer).toHaveTextContent('1')
+    await user.click(layer)
+    const options = await screen.findAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3', '4', '5'])
+    await user.click(screen.getByRole('option', { name: '3' }))
+    expect(layer).toHaveTextContent('3')
+    await user.click(within(form).getByRole('button', { name: 'Create' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    const created = (await listNodes(timeline.id)).at(-1)!
+    expect(created).toMatchObject({ title: 'Deep', layer: 3 })
+
+    await act(() => router.navigate(`/timelines/${timeline.id}/nodes/${created.id}`))
+    const dialog = await screen.findByRole('dialog', { name: 'Deep' })
+    await user.click(within(dialog).getByRole('button', { name: 'Edit' }))
+    const edit = await screen.findByRole('dialog', { name: 'Edit node' })
+    const editLayer = within(edit).getByRole('combobox', { name: 'Layer' })
+    expect(editLayer).toHaveTextContent('3')
+    await user.click(editLayer)
+    await user.click(await screen.findByRole('option', { name: '5' }))
+    await user.click(within(edit).getByRole('button', { name: 'Save' }))
+
+    await screen.findByRole('dialog', { name: 'Deep' })
+    expect(await getNode(created.id)).toMatchObject({ layer: 5 })
+  })
+})
+
 describe('unsaved-changes guard', () => {
   it('asks before closing a dirty form with Esc, X and Cancel', async () => {
     const { timeline } = await seed()

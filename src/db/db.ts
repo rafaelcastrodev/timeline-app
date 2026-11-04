@@ -1,5 +1,5 @@
 import { Dexie, type EntityTable } from 'dexie'
-import type { Timeline, TimelineNode } from '@/types/models'
+import { DEFAULT_NODE_LAYER, type Timeline, type TimelineNode } from '@/types/models'
 
 export class TimelineDatabase extends Dexie {
   declare timelines: EntityTable<Timeline, 'id'>
@@ -21,6 +21,17 @@ export class TimelineDatabase extends Dexie {
           .toCollection()
           .modify((node: Partial<TimelineNode>) => {
             node.color ??= null
+          }),
+      )
+    // v3: nodes gain `layer` (not indexed); existing nodes go to layer 1.
+    this.version(3)
+      .stores(stores)
+      .upgrade((tx) =>
+        tx
+          .table('nodes')
+          .toCollection()
+          .modify((node: Partial<TimelineNode>) => {
+            node.layer ??= DEFAULT_NODE_LAYER
           }),
       )
   }
