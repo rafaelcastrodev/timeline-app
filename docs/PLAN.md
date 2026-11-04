@@ -2,10 +2,10 @@
 
 ## Current status
 
-- Active phase: **4. Timeline view** (not started).
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation). 66 unit/integration tests; E2E dashboard flow passes on mobile and desktop.
-- The timeline view currently has the header (back action, title, actions menu with Edit and Delete) and the description; phase 4 adds the orientation toggle, layouts and node cards.
-- Next step: phase 4, first item.
+- Active phase: **5. Node CRUD + detail** (not started).
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action). 70 unit/integration tests; E2E dashboard and timeline view flows pass on mobile and desktop.
+- The "+ Node" and "Add first node" links already point to `nodes/new`; that route does not exist yet and phase 5 adds it. Node cards are not clickable yet.
+- Next step: phase 5, first item.
 
 ## Phases
 
@@ -49,10 +49,10 @@ Done when: tests cover allowed elements per variant, raw HTML not rendered, `jav
 Done when: E2E on mobile and desktop: create several timelines, scroll loads more, select one, edit, delete with confirmation.
 
 ### 4. Timeline view
-- [ ] Header with title, orientation toggle (persisted), actions menu.
-- [ ] Vertical and horizontal layouts (`snap-x` for horizontal).
-- [ ] Node card: inline title + clamped excerpt + drag handle placeholder.
-- [ ] Empty state + "+ Node" action.
+- [x] Header with title, orientation toggle (persisted), actions menu.
+- [x] Vertical and horizontal layouts (`snap-x` for horizontal).
+- [x] Node card: inline title + clamped excerpt + drag handle placeholder.
+- [x] Empty state + "+ Node" action.
 
 Done when: both orientations render correctly at 360 px and desktop widths; orientation survives reload.
 

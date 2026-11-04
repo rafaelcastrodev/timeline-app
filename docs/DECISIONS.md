@@ -66,3 +66,7 @@ Rationale: closed dialogs and deleted records do not stay in the history stack, 
 ## D-018 — React Router 8 (2026-11-03)
 React Router 8 is the current major at phase 3. It removed `react-router-dom`: `RouterProvider` is imported from `react-router/dom`, everything else from `react-router`. The data router API (`createBrowserRouter`, `useBlocker`) is unchanged.
 Rationale: latest stable at implementation time (D-002 names React Router without a version).
+
+## D-019 — Orientation toggle is a regular timeline update (2026-11-03)
+The header toggle saves the orientation with `updateTimeline`, which bumps the timeline's `updated_at`, so switching the view moves the timeline to the top of the dashboard.
+Rationale: orientation is a persisted field of the timeline, also editable in its form; `updated_at` tracks any activity on the timeline (D-009, D-012); one update path in the repository.

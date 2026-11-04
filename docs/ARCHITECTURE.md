@@ -6,7 +6,7 @@
 |---|---|---|
 | Build | Vite + React + TypeScript (strict) | TypeScript pinned to 6.0.x until typescript-eslint supports 7 (D-010) |
 | Styling | Tailwind CSS v4 | |
-| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
+| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Pointer, touch and keyboard sensors |
 | Routing | React Router 8, data router (`createBrowserRouter`) | Required for `useBlocker`. `RouterProvider` comes from `react-router/dom`, everything else from `react-router` |
@@ -121,12 +121,14 @@ db.version(1).stores({
 
 ## Timeline view
 
-- Header: back action (mobile), title, orientation toggle (Toggle Group), actions menu (edit, export, import-replace, delete).
+- Header: back action (mobile), title, orientation toggle, "+ Node" action, actions menu (edit, export, import-replace, delete).
+- Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query.
+- "+ Node": one link to `nodes/new`, a floating action button (bottom-right, icon only) below `lg` and a regular header button from `lg` up. The node area has bottom padding below `lg` so the last card stays clear of it.
 - Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails), then replaces the route with `/`.
-- Vertical: a vertical line with node cards stacked.
-- Horizontal: horizontal scroll container with `snap-x`; cards have a fixed width.
-- Node card: inline-rendered title + description excerpt clamped to ~3 lines + drag handle.
-- "+ Node" button (floating action button on mobile).
+- Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
+- Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
+- Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
+- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`, links as text) + description excerpt clamped to 3 lines + grip icon. The grip is a visual placeholder until phase 6 turns it into the drag handle; links render as text because the card becomes clickable in phase 5.
 
 ## Markdown
 

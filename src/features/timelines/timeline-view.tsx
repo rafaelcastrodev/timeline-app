@@ -1,4 +1,12 @@
-import { ArrowLeftIcon, MoreVerticalIcon, PencilIcon, SearchXIcon, Trash2Icon } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  ListPlusIcon,
+  MoreVerticalIcon,
+  PencilIcon,
+  PlusIcon,
+  SearchXIcon,
+  Trash2Icon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet, useNavigate, useParams } from 'react-router'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
@@ -12,8 +20,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { deleteTimeline, useTimeline } from '@/db'
+import { deleteTimeline, updateTimeline, useNodes, useTimeline } from '@/db'
+import { NodeList } from '@/features/nodes/node-list'
 import type { Timeline } from '@/types/models'
+import { OrientationToggle } from './orientation-toggle'
 
 function BackToList() {
   return (
@@ -74,6 +84,25 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
         <h2 className="min-w-0 flex-1 text-lg font-semibold">
           <MarkdownInline>{timeline.title}</MarkdownInline>
         </h2>
+        <OrientationToggle
+          value={timeline.orientation}
+          onChange={(orientation) => {
+            // The live query re-renders with the stored value; on failure the toggle stays put.
+            updateTimeline(timeline.id, { orientation }).catch((error: unknown) => {
+              console.error('Could not change the orientation', error)
+            })
+          }}
+        />
+        {/* Floating action button below `lg`, regular header button from `lg` up. */}
+        <Button
+          asChild
+          className="fixed right-4 bottom-4 z-20 size-14 rounded-full shadow-lg lg:static lg:z-auto lg:size-auto lg:rounded-lg lg:shadow-none"
+        >
+          <Link to="nodes/new" aria-label="Add node">
+            <PlusIcon aria-hidden="true" className="size-6 lg:size-4" />
+            <span className="sr-only lg:not-sr-only">Node</span>
+          </Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Timeline actions">
@@ -96,10 +125,15 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
       </header>
 
       {timeline.description.trim() && (
-        <section aria-label="Description" className="p-4">
+        <section aria-label="Description" className="px-4 pt-4 lg:px-6">
           <MarkdownBlock>{timeline.description}</MarkdownBlock>
         </section>
       )}
+
+      {/* Bottom padding keeps the last card clear of the floating action button on mobile. */}
+      <div className="pb-20 lg:pb-4">
+        <TimelineNodes timeline={timeline} />
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}
@@ -117,4 +151,35 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
       <Outlet context={timeline} />
     </div>
   )
+}
+
+function TimelineNodes({ timeline }: { timeline: Timeline }) {
+  const nodes = useNodes(timeline.id)
+
+  if (nodes === undefined) {
+    return (
+      <div aria-busy="true" aria-label="Loading nodes" className="flex flex-col gap-4 p-4 lg:px-6">
+        {Array.from({ length: 3 }, (_, index) => (
+          <Skeleton key={index} className="h-20 w-full max-w-2xl" />
+        ))}
+      </div>
+    )
+  }
+
+  if (nodes.length === 0) {
+    return (
+      <EmptyState
+        icon={ListPlusIcon}
+        title="No nodes yet"
+        description="Add the first event to this timeline."
+        action={
+          <Button asChild variant="outline">
+            <Link to="nodes/new">Add first node</Link>
+          </Button>
+        }
+      />
+    )
+  }
+
+  return <NodeList nodes={nodes} orientation={timeline.orientation} />
 }

@@ -1,36 +1,24 @@
 import { expect, test, type Page } from '@playwright/test'
+import { seedRecords } from './seed.ts'
 
 const PAGE_SIZE = 20
 const SEEDED = 25
 
-/** Writes timelines straight into IndexedDB (the app must have opened the database). */
+/** Seeds `count` timelines, each a minute older than the previous one. */
 async function seedTimelines(page: Page, count: number) {
-  await page.evaluate(async (count) => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('timeline-app')
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-    const tx = db.transaction('timelines', 'readwrite')
-    const store = tx.objectStore('timelines')
-    const base = Date.parse('2026-01-01T00:00:00.000Z')
-    for (let i = 0; i < count; i++) {
-      const at = new Date(base - i * 60_000).toISOString()
-      store.put({
-        id: crypto.randomUUID(),
-        title: `Seeded ${String(i + 1).padStart(2, '0')}`,
-        description: '',
-        orientation: 'vertical',
-        created_at: at,
-        updated_at: at,
-      })
+  const base = Date.parse('2026-01-01T00:00:00.000Z')
+  const timelines = Array.from({ length: count }, (_, i) => {
+    const at = new Date(base - i * 60_000).toISOString()
+    return {
+      id: crypto.randomUUID(),
+      title: `Seeded ${String(i + 1).padStart(2, '0')}`,
+      description: '',
+      orientation: 'vertical',
+      created_at: at,
+      updated_at: at,
     }
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error)
-    })
-    db.close()
-  }, count)
+  })
+  await seedRecords(page, { timelines })
 }
 
 const listPane = (page: Page) => page.getByRole('complementary', { name: 'Timelines' })
