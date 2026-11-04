@@ -14,6 +14,7 @@
 | Forms | react-hook-form + `@hookform/resolvers` (zod) | zod schemas are shared with import validation. Fields use shadcn/ui `Field` |
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
 | IDs | `crypto.randomUUID()` | |
+| Hosting | GitHub Pages, deployed by a GitHub Actions workflow | Project site under `/timeline-app/` (D-039) |
 | PWA | `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` | Precached app shell, installable (D-031) |
 | Unit/integration tests | Vitest + Testing Library + `fake-indexeddb` | |
 | E2E tests | Playwright (mobile and desktop viewports) + `@axe-core/playwright` | Projects: `mobile` 360×800 with touch, `desktop` 1280×800; Chromium |
@@ -266,8 +267,17 @@ Sonner `Toaster` (`src/components/ui/sonner.tsx`), mounted once in `AppProviders
 
 - `generateSW` precaches every built asset (JS, CSS, HTML, fonts, icons); navigations fall back to `index.html`, so deep links load offline.
 - `registerType: 'autoUpdate'` with the injected register script: a new version installs in the background and is used on the next load; the page is never reloaded automatically (no lost edits).
-- Manifest: "Timeline App" / "Timelines", `display: standalone`, icons 64/192/512 and a maskable 512. Icons, `favicon.ico` and the Apple touch icon are generated from `public/favicon.svg` with `npm run generate-pwa-assets` (`pwa-assets.config.ts`) and committed.
+- Manifest: "Timeline App" / "Timelines", `display: standalone`, `start_url` and `scope` set by the plugin to Vite's `base`, icons 64/192/512 and a maskable 512. Icons, `favicon.ico` and the Apple touch icon are generated from `public/favicon.svg` with `npm run generate-pwa-assets` (`pwa-assets.config.ts`) and committed.
 - The service worker is built only by `npm run build` (not active in `npm run dev`, so E2E runs against the dev server without it).
+
+## Deployment
+
+GitHub Pages project site at `https://rafaelcastrodev.github.io/timeline-app/`, deployed by `.github/workflows/deploy.yml` on every push to `main` (Pages source: GitHub Actions). D-039.
+
+- The workflow runs `npm ci`, `lint`, `test`, then `npm run build` with `BASE_PATH=/<repo>/`, copies `dist/index.html` to `dist/404.html` and deploys `dist`.
+- `vite.config.ts` sets `base` from `BASE_PATH` (default `/`, so dev, preview and E2E run at the root). The router's `basename` is `import.meta.env.BASE_URL`; asset links in `index.html`, the manifest and the service worker scope follow `base`.
+- Pages has no rewrites: a deep link (`/timeline-app/timelines/<id>`) without the service worker gets `404.html`, the app shell, and the router renders the route. Once the service worker is installed it serves the shell for navigations itself.
+- Storage is shared with the account's other Pages sites on the same origin; storage names carry the app prefix (D-038).
 
 ## Risks
 

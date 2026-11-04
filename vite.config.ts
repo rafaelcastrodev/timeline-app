@@ -5,6 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Public path of the build. `/` locally; the GitHub Pages workflow sets `BASE_PATH=/timeline-app/`
+  // because a project site is served from `https://<user>.github.io/<repo>/`.
+  base: process.env.BASE_PATH ?? '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -19,8 +22,7 @@ export default defineConfig({
         name: 'Timeline App',
         short_name: 'Timelines',
         description: 'Personal, offline-first app for building event timelines.',
-        start_url: '/',
-        scope: '/',
+        // `start_url` and `scope` are left out: vite-plugin-pwa sets both to `base`.
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#ffffff',

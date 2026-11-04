@@ -40,4 +40,6 @@ npm run format:check
 
 The first `npm run e2e` needs the Playwright browser: `npx playwright install chromium`.
 
+Deployment: every push to `main` builds the app and publishes it to GitHub Pages (`.github/workflows/deploy.yml`; in the repository settings, Pages → Source must be **GitHub Actions**). To build for a subpath locally: `BASE_PATH=/timeline-app/ npm run build`.
+
 Project docs: [requirements](docs/REQUIREMENTS.md), [architecture](docs/ARCHITECTURE.md), [plan and status](docs/PLAN.md), [decision log](docs/DECISIONS.md).
