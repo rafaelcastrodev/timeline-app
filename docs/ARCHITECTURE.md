@@ -9,8 +9,8 @@
 | Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Pointer, touch and keyboard sensors |
-| Routing | React Router, data router (`createBrowserRouter`) | Required for `useBlocker` |
-| Forms | react-hook-form + zod | zod schemas are shared with import validation |
+| Routing | React Router 8, data router (`createBrowserRouter`) | Required for `useBlocker`. `RouterProvider` comes from `react-router/dom`, everything else from `react-router` |
+| Forms | react-hook-form + `@hookform/resolvers` (zod) | zod schemas are shared with import validation. Fields use shadcn/ui `Field` |
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
 | IDs | `crypto.randomUUID()` | |
 | Unit/integration tests | Vitest + Testing Library + `fake-indexeddb` | |
@@ -27,13 +27,13 @@ src/
   components/
     ui/             shadcn/ui generated components
     markdown/       Markdown renderers and editor
-    common/         shared app components (ConfirmDialog, EmptyState, InfiniteList)
+    common/         shared app components (ConfirmDialog, EmptyState, LoadMoreSentinel, RouteDialog)
   db/               Dexie instance, schema, repositories, migrations
   features/
     timelines/      dashboard list, timeline form, timeline view
     nodes/          node card, node detail, node form, sortable logic
     transfer/       import/export (schema, parser, UI)
-  hooks/            useUnsavedChangesGuard, useInfiniteLimit, useMediaQuery
+  hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard
   lib/              dates, slug, utils
   types/
   test/             Vitest setup
@@ -86,7 +86,7 @@ db.version(1).stores({
 
 ### Code layout
 
-- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`) and partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`). Titles are trimmed and required.
+- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`). Titles are trimmed and required.
 - Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
 - Test helper `setupTestDatabase()` (`src/test/db.ts`) clears tables and fakes only `Date`; timers stay real for fake-indexeddb.
@@ -102,21 +102,27 @@ db.version(1).stores({
 /timelines/:timelineId/nodes/:nodeId   node detail (read mode, "Edit" switches to the form in place)
 ```
 
-- Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action.
-- Desktop (≥ `lg`): two panes. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state. Node detail and forms open in a Dialog over the timeline.
+- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router. `AppLayout` (`src/app/app-layout.tsx`) renders the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
+- Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout shows the list when no `:timelineId` param is matched and the detail pane otherwise (CSS `hidden` + `lg:` overrides, no media-query hook).
+- Desktop (≥ `lg`): two panes, each scrolling on its own. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state.
+- Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016).
+- Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). Creating a timeline replaces `/timelines/new` with the new timeline's route.
 - Detail views are routes (not only component state), so the browser back button closes them and the unsaved-changes guard can intercept it.
 
 ## Dashboard (master-detail, infinite scroll)
 
-- Query: `db.timelines.orderBy('updated_at').reverse().limit(n)` via `useLiveQuery`; `n` grows by a page size (e.g. 20) when a sentinel element enters the viewport (IntersectionObserver).
-- Growing the limit (instead of cursor pagination) keeps the list reactive when `updated_at` changes reorder items.
-- List item: title (inline Markdown), description excerpt (2 lines), node count, relative `updated_at`.
-- Actions: new timeline, import as new timeline.
+- Query: `useTimelines(limit)` (`orderBy('updated_at').reverse().limit(n)` via `useLiveQuery`); `useInfiniteLimit(20)` holds `n`.
+- `LoadMoreSentinel` sits after the last item and observes the viewport (IntersectionObserver, 200 px margin). It calls `loadMore` while visible and enabled; it is enabled only when more timelines exist and the page for the current limit has arrived, so each page loads once and a short page that leaves the sentinel on screen keeps loading.
+- Growing the limit (instead of cursor pagination) keeps the list reactive when `updated_at` changes reorder items. `useLiveQuery` keeps the previous result while the query for a new limit runs, so the list does not flash.
+- States: skeleton rows while loading; empty state when there are no timelines.
+- List item: a `NavLink` (highlighted while its timeline or a child route is open) with title (inline Markdown, links as text), description excerpt (2 lines), node count, relative `updated_at` (`formatRelativeTime`, absolute date in the tooltip).
+- Actions: new timeline, import as new timeline (phase 7).
 - Nodes inside a timeline are rendered in full (no virtualization or infinite scroll); virtualization conflicts with drag and drop and is unnecessary at personal scale.
 
 ## Timeline view
 
-- Header: title, orientation toggle (Toggle Group), actions menu (edit, export, import-replace, delete).
+- Header: back action (mobile), title, orientation toggle (Toggle Group), actions menu (edit, export, import-replace, delete).
+- Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails), then replaces the route with `/`.
 - Vertical: a vertical line with node cards stacked.
 - Horizontal: horizontal scroll container with `snap-x`; cards have a fixed width.
 - Node card: inline-rendered title + description excerpt clamped to ~3 lines + drag handle.
@@ -124,11 +130,14 @@ db.version(1).stores({
 
 ## Markdown
 
-- `MarkdownInline`: for titles. Allows only `strong`, `em`, `del`, `code`, `a` (`unwrapDisallowed`). The form field is a single-line Input.
-- `MarkdownBlock`: for descriptions in detail views. GFM enabled (lists, tables, task lists, strikethrough). Links open in a new tab with `rel="noopener noreferrer"`.
-- `MarkdownExcerpt`: for cards. Headings render as plain paragraphs, images are replaced by their alt text, clamped with `line-clamp-*`. Verify in phase 2 that `line-clamp` works on nested block children; if not, fall back to `max-height` + gradient mask.
-- `MarkdownEditor`: Textarea with "Write" / "Preview" tabs. No heavy editor dependency.
-- Safety: `react-markdown` without `rehype-raw` does not render raw HTML; its default URL transform blocks `javascript:` URLs. Never use `dangerouslySetInnerHTML`.
+Components live in `src/components/markdown` (re-exported from `index.ts`). All variants use `remark-gfm` and are styled by mapping elements to components with Tailwind classes and theme tokens (no typography plugin).
+
+- `MarkdownInline`: for titles. Allows only `strong`, `em`, `del`, `code`, `a` (`unwrapDisallowed`); images render as their alt text. `disableLinks` renders links as plain text, for titles inside links/buttons (no nested interactive content). The form field is a single-line Input.
+- `MarkdownBlock`: for descriptions in detail views. GFM enabled (lists, tables, task lists with disabled checkboxes, strikethrough, autolinks).
+- `MarkdownExcerpt`: for cards and list items. Headings render as plain paragraphs, images as their alt text, links as plain text. Clamped with `line-clamp-{1..4}` via the `lines` prop (default 3). `line-clamp` was verified in Chromium with nested block children (paragraphs, lists, nested lists, code blocks, blockquotes); no fallback needed.
+- `MarkdownEditor`: Textarea with "Write" / "Preview" tabs, controlled (`value` / `onChange(string)`, used with react-hook-form's `Controller`); other textarea props are forwarded. The textarea stays mounted (hidden) while previewing.
+- Links open in a new tab with `rel="noopener noreferrer"`.
+- Safety: no `rehype-raw`, so raw HTML is shown as literal text and never rendered. The default URL transform blanks unsafe URLs (`javascript:`, `data:`, …); a link whose URL was blanked renders as plain text. Never use `dangerouslySetInnerHTML`.
 
 ## Unsaved-changes guard
 

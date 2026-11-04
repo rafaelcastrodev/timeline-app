@@ -46,3 +46,23 @@ Rationale: dense positions keep `max + 1` appends and export order trivial; node
 ## D-013 — Separate create and update schemas (2026-11-03)
 Creation input schemas carry defaults (`description: ''`, `orientation: 'vertical'`); update schemas are `partial()` of the base fields without defaults.
 Rationale: in zod 4 defaults apply inside `optional()`, so a partial of the creation schema would overwrite absent fields with defaults.
+
+## D-014 — Markdown rendering details (2026-11-03)
+Elements are styled by mapping them to components with Tailwind classes and theme tokens, not with `@tailwindcss/typography`. Raw HTML is shown as literal text (react-markdown default without `rehype-raw`). Links whose URL is blanked by the default URL transform render as plain text instead of `<a href="">`. Excerpts always render links as plain text and `MarkdownInline` has a `disableLinks` prop, because both appear inside clickable cards and list items. Images render as alt text in titles and excerpts.
+Rationale: component mapping uses the shadcn/ui tokens directly with no extra dependency; showing raw HTML as text keeps what the user typed visible; nested interactive elements are invalid HTML and break click handling.
+
+## D-015 — ESLint `no-unused-vars` ignores rest siblings (2026-11-03)
+`@typescript-eslint/no-unused-vars` runs with `ignoreRestSiblings: true`.
+Rationale: react-markdown passes a `node` prop to custom components; destructuring it out (`{ node, ...props }`) keeps it off the DOM.
+
+## D-016 — Route dialogs are full screen on mobile (2026-11-03)
+Forms and node detail render in one responsive shadcn/ui Dialog (`RouteDialog`): full screen below `lg`, centered modal from `lg` up. No separate page component for mobile.
+Rationale: one component and one close path (X, Esc, overlay) for the unsaved-changes guard on every screen size; no remount when the viewport crosses the breakpoint; still a full screen on mobile as required.
+
+## D-017 — Closing a route view goes back in history (2026-11-03)
+Closing a route dialog navigates back (`navigate(-1)`) when it was opened inside the app, and replaces it with the parent route when it was the first history entry (direct URL). Creating a timeline replaces `/timelines/new` with the new timeline's route; deleting one replaces the route with `/`.
+Rationale: closed dialogs and deleted records do not stay in the history stack, so the back button never reopens a finished form or a missing timeline.
+
+## D-018 — React Router 8 (2026-11-03)
+React Router 8 is the current major at phase 3. It removed `react-router-dom`: `RouterProvider` is imported from `react-router/dom`, everything else from `react-router`. The data router API (`createBrowserRouter`, `useBlocker`) is unchanged.
+Rationale: latest stable at implementation time (D-002 names React Router without a version).

@@ -2,9 +2,10 @@
 
 ## Current status
 
-- Active phase: **2. Markdown foundation** (not started).
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks, 30 unit tests).
-- Next step: phase 2, first item.
+- Active phase: **4. Timeline view** (not started).
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation). 66 unit/integration tests; E2E dashboard flow passes on mobile and desktop.
+- The timeline view currently has the header (back action, title, actions menu with Edit and Delete) and the description; phase 4 adds the orientation toggle, layouts and node cards.
+- Next step: phase 4, first item.
 
 ## Phases
 
@@ -34,16 +35,16 @@ Done when: `dev`, `build`, `lint`, `test` and `e2e` scripts all pass on an empty
 Done when: unit tests cover CRUD, cascade delete, ordering, reorder, `created_at` unchanged on update, parent `updated_at` bump.
 
 ### 2. Markdown foundation
-- [ ] `MarkdownInline`, `MarkdownBlock`, `MarkdownExcerpt`, `MarkdownEditor` (Write/Preview tabs).
-- [ ] Verify `line-clamp` with nested blocks; apply fallback if needed.
+- [x] `MarkdownInline`, `MarkdownBlock`, `MarkdownExcerpt`, `MarkdownEditor` (Write/Preview tabs).
+- [x] Verify `line-clamp` with nested blocks; apply fallback if needed.
 
 Done when: tests cover allowed elements per variant, raw HTML not rendered, `javascript:` links neutralized.
 
 ### 3. Dashboard (master-detail)
-- [ ] App layout: two panes on `lg+`, stacked screens below.
-- [ ] Timeline list with infinite scroll (growing limit + IntersectionObserver), loading skeleton, empty state.
-- [ ] Timeline create/edit form (title, description, orientation).
-- [ ] Delete timeline with confirmation (cascade).
+- [x] App layout: two panes on `lg+`, stacked screens below.
+- [x] Timeline list with infinite scroll (growing limit + IntersectionObserver), loading skeleton, empty state.
+- [x] Timeline create/edit form (title, description, orientation).
+- [x] Delete timeline with confirmation (cascade).
 
 Done when: E2E on mobile and desktop: create several timelines, scroll loads more, select one, edit, delete with confirmation.
 

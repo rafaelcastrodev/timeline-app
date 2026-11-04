@@ -48,6 +48,11 @@ export const timelineInputSchema = timelineFields.extend({
 })
 export type TimelineInput = z.input<typeof timelineInputSchema>
 
+/** Timeline form: every editable field present, no defaults. */
+export const timelineFormSchema = timelineFields
+export type TimelineFormInput = z.input<typeof timelineFormSchema>
+export type TimelineFormValues = z.output<typeof timelineFormSchema>
+
 /** Partial timeline update. No defaults, so absent fields stay unchanged. */
 export const timelineChangesSchema = timelineFields.partial()
 export type TimelineChanges = z.input<typeof timelineChangesSchema>
