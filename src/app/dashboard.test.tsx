@@ -96,6 +96,8 @@ describe('dashboard', () => {
 
     renderApp()
     await waitFor(() => expect(listItems()).toHaveLength(TIMELINE_PAGE_SIZE))
+    // The sentinel creates its observer in an effect, which can run after the list is in the DOM.
+    await waitFor(() => expect(MockIntersectionObserver.instances.size).toBeGreaterThan(0))
     act(() => MockIntersectionObserver.trigger(true))
     await waitFor(() => expect(listItems()).toHaveLength(total))
   })

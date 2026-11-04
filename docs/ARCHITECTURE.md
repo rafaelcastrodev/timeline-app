@@ -8,7 +8,7 @@
 | Styling | Tailwind CSS v4 | |
 | Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
-| Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Pointer, touch and keyboard sensors |
+| Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` | Mouse, touch and keyboard sensors (D-023) |
 | Routing | React Router 8, data router (`createBrowserRouter`) | Required for `useBlocker`. `RouterProvider` comes from `react-router/dom`, everything else from `react-router` |
 | Forms | react-hook-form + `@hookform/resolvers` (zod) | zod schemas are shared with import validation. Fields use shadcn/ui `Field` |
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
@@ -128,7 +128,7 @@ db.version(1).stores({
 - Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
 - Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
 - Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
-- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is a visual placeholder until phase 6 turns it into the drag handle.
+- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is the drag handle: a ghost icon Button stacked above the link overlay, named "Reorder" + the rendered title (`aria-labelledby`).
 
 ## Node detail and forms
 
@@ -162,11 +162,14 @@ Shared hook `useUnsavedChangesGuard(isDirty)` (`src/hooks/use-unsaved-changes-gu
 
 ## Drag and drop
 
-- `DndContext` + `SortableContext` with `verticalListSortingStrategy` or `horizontalListSortingStrategy` by orientation.
-- Sensors: `PointerSensor` (mouse), `TouchSensor` with an activation delay (~250 ms, tolerance ~5 px) so scrolling is not hijacked, `KeyboardSensor` with `sortableKeyboardCoordinates`.
-- Dragging starts only from a drag handle on the card; tapping elsewhere on the card opens the detail.
-- Auto-scroll while dragging near container edges (dnd-kit built-in).
-- Optimistic UI: apply `arrayMove` locally, then persist the renumbering.
+Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`use-node-order.ts`).
+
+- `DndContext` (`closestCenter`) + `SortableContext` with `verticalListSortingStrategy` or `horizontalListSortingStrategy` by orientation. Each `<li>` is a `useSortable` item moved with `CSS.Translate` (no scaling: cards differ in height); a modifier locks movement to the list's axis.
+- Sensors (D-023): `MouseSensor` (activation distance 5 px), `TouchSensor` (delay 250 ms, tolerance 5 px, so a swipe that starts on the handle does not start a drag), `KeyboardSensor` with `sortableKeyboardCoordinates` (Space/Enter picks up and drops, arrows move, Esc cancels).
+- Dragging starts only from the card's drag handle (`setActivatorNodeRef`); tapping elsewhere on the card opens the detail. The handle has `touch-action: manipulation` and no text selection or touch callout.
+- Auto-scroll near container edges is dnd-kit's built-in. The horizontal scroller turns snapping off while a drag is active.
+- Screen reader announcements use positions ("Picked up node at position 2 of 4"), not titles (titles are Markdown). A move is announced only when the target position changes.
+- Optimistic UI (D-024): on drop, `useNodeOrder` shows the new order at once and calls `reorderNodes` with the full id list. The optimistic order is dropped when the live query delivers the same order, or when nodes are added or removed meanwhile. If the write fails, the stored order is shown again with an inline alert ("Could not save the new order"), cleared by the next move.
 
 ## Import / Export
 

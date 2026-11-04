@@ -181,5 +181,5 @@ function TimelineNodes({ timeline }: { timeline: Timeline }) {
     )
   }
 
-  return <NodeList nodes={nodes} orientation={timeline.orientation} />
+  return <NodeList timelineId={timeline.id} nodes={nodes} orientation={timeline.orientation} />
 }

@@ -82,3 +82,11 @@ Rationale: D-005 asks for editing in place; no extra route or history entry for 
 ## D-022 — Node card is clickable through a stretched title link (2026-11-03)
 The card title is the only link; its `::after` overlay covers the card. The card is not wrapped in a link.
 Rationale: the whole card is a click target with the title as the link's accessible name, and the phase 6 drag handle can be a button inside the card without nesting interactive content in a link.
+
+## D-023 — Mouse and touch sensors instead of the pointer sensor (2026-11-03)
+Drag and drop uses `MouseSensor` (distance 5 px) and `TouchSensor` (delay 250 ms, tolerance 5 px) plus `KeyboardSensor`, not `PointerSensor`. The drag handle uses `touch-action: manipulation`.
+Rationale: `PointerSensor` also handles touch and, per the dnd-kit docs, needs `touch-action: none` to reliably prevent scrolling; touch events can block scrolling from `touchmove` instead, so the handle does not need `touch-action: none` and the long-press delay decides between drag and scroll. Separate sensors give mouse and touch their own activation constraints.
+
+## D-024 — Optimistic reorder reconciled against the live query (2026-11-03)
+After a drop, the new id order is kept in component state and shown until the live query returns the same order; it is discarded if the set of nodes changes, and on a failed write (only the latest request can discard it), which shows an inline alert. Reorder failures are not toasts yet (toasts are phase 8).
+Rationale: no flash back to the old order between the drop and the IndexedDB commit, consecutive drags do not flicker, and an order kept in state never overrides a later change from another tab.

@@ -2,10 +2,9 @@
 
 ## Current status
 
-- Active phase: **6. Drag and drop** (not started).
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms). 81 unit/integration tests; E2E dashboard, timeline view and node flows pass on mobile and desktop.
-- The card's grip icon is still a visual placeholder (`data-slot="drag-handle"`); phase 6 turns it into the drag handle, a button above the card's link overlay.
-- Next step: phase 6, first item.
+- Active phase: **6. Drag and drop** (implementation done; manual check on a real touch device pending).
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence). 87 unit/integration tests; E2E dashboard, timeline view, node and reorder flows pass on mobile and desktop (touch long press emulated via CDP on mobile).
+- Next step: manual reorder check on a real touch device (long press on the grip drags; swiping elsewhere and on the grip scrolls), then phase 7, first item.
 
 ## Phases
 
@@ -66,9 +65,9 @@ Done when: both orientations render correctly at 360 px and desktop widths; orie
 Done when: E2E: create/view/edit/delete a node; with a dirty form, Esc/X/back/Cancel asks for confirmation; with a clean form or after saving, it does not.
 
 ### 6. Drag and drop
-- [ ] Sortable list in both orientations.
-- [ ] Pointer, touch (activation delay) and keyboard sensors; drag handle only.
-- [ ] Optimistic reorder + transactional persistence.
+- [x] Sortable list in both orientations.
+- [x] Mouse, touch (activation delay) and keyboard sensors; drag handle only.
+- [x] Optimistic reorder + transactional persistence.
 
 Done when: E2E: reorder by mouse and by keyboard, reload, order kept. Manual check on a real touch device.
 
