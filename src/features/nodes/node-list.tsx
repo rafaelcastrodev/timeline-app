@@ -24,6 +24,7 @@ import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { Orientation, TimelineNode } from '@/types/models'
 import { NodeCard } from './node-card'
+import { markerClasses, nodeColorClasses } from './node-colors'
 import { useNodeOrder } from './use-node-order'
 
 interface NodeListProps {
@@ -156,10 +157,7 @@ function SortableNode({ node, orientation }: { node: TimelineNode; orientation: 
           isDragging && 'z-20',
         )}
       >
-        <span
-          aria-hidden="true"
-          className="relative ml-4 size-3 rounded-full border-2 border-primary bg-background"
-        />
+        <NodeMarker node={node} className="relative ml-4" />
         <NodeCard node={node} dragHandle={dragHandle} isDragging={isDragging} className="flex-1" />
       </li>
     )
@@ -172,11 +170,24 @@ function SortableNode({ node, orientation }: { node: TimelineNode; orientation: 
       data-dragging={isDragging || undefined}
       className={cn('relative max-w-2xl', isDragging && 'z-20')}
     >
-      <span
-        aria-hidden="true"
-        className="absolute top-4 -left-[1.375rem] size-3 rounded-full border-2 border-primary bg-background"
-      />
+      <NodeMarker node={node} className="absolute top-4 -left-[1.375rem]" />
       <NodeCard node={node} dragHandle={dragHandle} isDragging={isDragging} />
     </li>
+  )
+}
+
+/** Dot on the timeline line, in the node's card color when it has one. */
+function NodeMarker({ node, className }: { node: TimelineNode; className: string }) {
+  const color = node.color ? nodeColorClasses[node.color] : null
+  return (
+    <span
+      aria-hidden="true"
+      data-slot="node-marker"
+      className={cn(
+        'size-3 rounded-full border-2',
+        color ? [color.vars, markerClasses] : 'border-primary bg-background',
+        className,
+      )}
+    />
   )
 }

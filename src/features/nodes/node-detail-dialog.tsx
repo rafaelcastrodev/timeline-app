@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { deleteNode, updateNode, useNode } from '@/db'
 import { useCloseRoute } from '@/hooks/use-close-route'
-import type { Timeline } from '@/types/models'
+import type { NodeColor, Timeline } from '@/types/models'
+import { nodeHeaderClasses } from './node-colors'
 import { NodeForm } from './node-form'
 
 /**
@@ -23,6 +24,8 @@ export function NodeDetailDialog() {
   const node = useNode(nodeId)
   const close = useCloseRoute(`/timelines/${timeline.id}`)
   const [editing, setEditing] = useState(false)
+  // Color picked in the edit form, previewed in the header until the form is left.
+  const [draftColor, setDraftColor] = useState<NodeColor | null | undefined>(undefined)
   // Set when leaving the form, so the Edit button gets focus back.
   const [focusEdit, setFocusEdit] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -56,12 +59,17 @@ export function NodeDetailDialog() {
   if (editing) {
     const leaveForm = () => {
       setEditing(false)
+      setDraftColor(undefined)
       setFocusEdit(true)
     }
     return (
-      <RouteDialog title="Edit node" onClose={close}>
+      <RouteDialog
+        title="Edit node"
+        headerClassName={nodeHeaderClasses(draftColor === undefined ? node.color : draftColor)}
+        onClose={close}
+      >
         <NodeForm
-          defaultValues={{ title: node.title, description: node.description }}
+          defaultValues={{ title: node.title, description: node.description, color: node.color }}
           submitLabel="Save"
           autoFocusTitle
           onSubmit={(values) => updateNode(node.id, values)}
@@ -70,13 +78,18 @@ export function NodeDetailDialog() {
             leaveForm()
           }}
           onCancel={leaveForm}
+          onColorChange={setDraftColor}
         />
       </RouteDialog>
     )
   }
 
   return (
-    <RouteDialog title={<MarkdownInline>{node.title}</MarkdownInline>} onClose={close}>
+    <RouteDialog
+      title={<MarkdownInline>{node.title}</MarkdownInline>}
+      headerClassName={nodeHeaderClasses(node.color)}
+      onClose={close}
+    >
       <div className="flex flex-1 flex-col gap-6">
         {node.description.trim() ? (
           <MarkdownBlock>{node.description}</MarkdownBlock>

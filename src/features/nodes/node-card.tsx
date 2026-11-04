@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import type { TimelineNode } from '@/types/models'
+import { cardClasses, nodeColorClasses } from './node-colors'
 
 interface NodeCardProps {
   node: TimelineNode
@@ -20,21 +21,25 @@ interface NodeCardProps {
  * link to the node detail whose `::after` covers the whole card, so the card is clickable without
  * wrapping it in a link. The drag handle is a button stacked above that overlay; its accessible
  * name is "Reorder" followed by the rendered title. Markdown links render as plain text to avoid
- * nested links.
+ * nested links. A node color gives the card a soft background of that hue.
  */
 export function NodeCard({ node, dragHandle, isDragging = false, className }: NodeCardProps) {
   const titleId = useId()
   const handleLabelId = useId()
+  const color = node.color ? nodeColorClasses[node.color] : null
 
   return (
     <Card
       size="sm"
       className={cn(
-        'relative h-full hover:bg-muted/50 has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50',
-        isDragging && 'bg-card shadow-lg ring-2 ring-primary/40 hover:bg-card',
+        'relative h-full has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50',
+        color ? [color.vars, cardClasses] : 'hover:bg-muted/50',
+        isDragging && 'shadow-lg ring-2 ring-primary/40',
+        isDragging && !color && 'bg-card hover:bg-card',
         className,
       )}
       data-slot="node-card"
+      data-color={node.color ?? undefined}
     >
       <CardHeader>
         <CardTitle>

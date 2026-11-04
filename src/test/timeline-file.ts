@@ -18,6 +18,7 @@ export function makeTimelineFile(nodeCount = 2): TimelineFile {
       id: crypto.randomUUID(),
       title: `Node ${position + 1}`,
       description: `Description ${position + 1}`,
+      color: null,
       position,
       created_at: `2025-01-0${position + 1}T00:00:00.000Z`,
       updated_at: `2025-03-0${position + 1}T00:00:00.000Z`,

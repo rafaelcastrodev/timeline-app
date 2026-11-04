@@ -32,6 +32,8 @@ async function seed(page: Page): Promise<string> {
       timeline_id: timelineId,
       title: `**${title}**`,
       description: `${title} *notes*\n\nSecond paragraph`,
+      // Colored and default cards; red and indigo are the lowest-contrast soft shades.
+      color: (['red', 'indigo', null] as const)[position],
       position,
       created_at: AT,
       updated_at: AT,
@@ -121,6 +123,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       await detail.getByRole('button', { name: 'Edit' }).click()
       await expect(page.getByRole('dialog', { name: 'Edit node' })).toBeVisible()
+      await page.getByRole('dialog').getByRole('radio', { name: 'Cyan' }).click()
       await page.getByRole('dialog').getByLabel('Title').fill('')
       await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click()
       await expect(page.getByText('Title is required')).toBeVisible()

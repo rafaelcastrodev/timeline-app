@@ -63,6 +63,27 @@ describe('node repository', () => {
     expect((await getTimeline(timeline.id))?.created_at).toBe(timeline.created_at)
   })
 
+  it('creates nodes with the default color unless one is given', async () => {
+    const { timeline, nodes } = await setup(['a'])
+    expect(nodes[0]!.color).toBeNull()
+    const colored = await createNode(timeline.id, { title: 'b', color: 'teal' })
+    expect(await getNode(colored.id)).toMatchObject({ color: 'teal' })
+  })
+
+  it('updates the color, back to the default too, and leaves it unchanged when absent', async () => {
+    const { nodes } = await setup(['a'])
+    const node = nodes[0]!
+    expect(await updateNode(node.id, { color: 'rose' })).toMatchObject({ color: 'rose' })
+    expect(await updateNode(node.id, { title: 'b' })).toMatchObject({ title: 'b', color: 'rose' })
+    expect(await updateNode(node.id, { color: null })).toMatchObject({ color: null })
+  })
+
+  it('rejects an unknown color', async () => {
+    const { timeline } = await setup([])
+    await expect(createNode(timeline.id, { title: 'x', color: 'slate' as never })).rejects.toThrow()
+    expect(await countNodes(timeline.id)).toBe(0)
+  })
+
   it('creating a node bumps the parent updated_at', async () => {
     const timeline = await createTimeline({ title: 'T' })
     advance()

@@ -43,7 +43,7 @@ describe('transfer repository', () => {
 
   it('round trip: export then import as new gives equivalent data with node created_at kept', async () => {
     const source = await createTimeline({ title: 'Source', orientation: 'horizontal' })
-    await createNode(source.id, { title: 'One', description: '**1**' })
+    await createNode(source.id, { title: 'One', description: '**1**', color: 'violet' })
     advance()
     await createNode(source.id, { title: 'Two' })
     advance()
@@ -66,14 +66,16 @@ describe('transfer repository', () => {
     const sourceNodes = await listNodes(source.id)
     const importedNodes = await listNodes(imported.id)
     const content = (nodes: typeof sourceNodes) =>
-      nodes.map(({ title, description, position, created_at, updated_at }) => ({
+      nodes.map(({ title, description, color, position, created_at, updated_at }) => ({
         title,
         description,
+        color,
         position,
         created_at,
         updated_at,
       }))
     expect(content(importedNodes)).toEqual(content(sourceNodes))
+    expect(importedNodes.map((node) => node.color)).toEqual(['violet', null])
     expect(importedNodes.every((node) => node.timeline_id === imported.id)).toBe(true)
     const sourceIds = new Set(sourceNodes.map((node) => node.id))
     expect(importedNodes.some((node) => sourceIds.has(node.id))).toBe(false)
@@ -128,6 +130,7 @@ describe('transfer repository', () => {
         timeline_id: target.id,
         title: 'Node 1',
         description: 'Description 1',
+        color: null,
         position: 0,
         created_at: file.nodes[0]!.created_at,
         updated_at: file.nodes[0]!.updated_at,

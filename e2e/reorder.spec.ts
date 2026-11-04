@@ -26,6 +26,7 @@ async function openTimeline(page: Page, orientation: Orientation): Promise<strin
       timeline_id: timelineId,
       title,
       description: `About ${title}`,
+      color: null,
       position,
       created_at: AT,
       updated_at: AT,

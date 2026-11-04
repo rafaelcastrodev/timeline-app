@@ -62,20 +62,27 @@ interface TimelineNode {
   timeline_id: string
   title: string              // Markdown (inline subset)
   description: string        // Markdown
+  color: NodeColor | null    // card color (Tailwind hue name); null = default card
   position: number           // 0..n-1, manual order within the timeline
   created_at: string         // ISO 8601, set once, preserved by import
   updated_at: string         // ISO 8601
 }
 ```
 
-### Dexie schema (v1)
+`NodeColor` is one of the chromatic Tailwind hues: `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose` (`NODE_COLORS`). Neutral palettes (slate, gray, zinc, …) are excluded (D-032).
+
+### Dexie schema (v2)
 
 ```ts
-db.version(1).stores({
+const stores = {
   timelines: 'id, updated_at',
   nodes: 'id, timeline_id, [timeline_id+position]',
-})
+}
+db.version(1).stores(stores)
+db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` */)
 ```
+
+`color` is not indexed; v2 only migrates existing nodes.
 
 ### Rules
 
@@ -88,7 +95,7 @@ db.version(1).stores({
 
 ### Code layout
 
-- zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
+- zod schemas and inferred types: `src/types/models.ts`. `NODE_COLORS` / `nodeColorSchema` (type `NodeColor`); record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`; node `color` defaults to `null`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
 - Export file schema: `src/types/transfer.ts` (`timelineFileSchema`, type `TimelineFile`), built from the shared field schemas in `models.ts`.
 - Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, `src/db/transfer.ts` (`exportTimeline`, `importTimeline`, `replaceTimeline`), re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
@@ -108,7 +115,7 @@ db.version(1).stores({
 - Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router inside `AppProviders` (`src/app/providers.tsx`: theme provider and toaster). `AppLayout` (`src/app/app-layout.tsx`) renders a visually hidden `<h1>` ("Timeline App"), the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
 - Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout hides the list while a `:timelineId` param is matched (CSS `hidden` + `lg:` overrides, no media-query hook). `<main>` is always rendered so the page keeps its main landmark; without a selection it holds only the desktop empty state (hidden below `lg`) and portaled dialogs.
 - Desktop (≥ `lg`): two panes, each scrolling on its own. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state.
-- Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016). Its title is a `ReactNode`, so node titles render as inline Markdown.
+- Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016). Its title is a `ReactNode`, so node titles render as inline Markdown. The title (and optional description) and the close button sit in a header bar that is `sticky` at the top of the dialog while the content scrolls; `headerClassName` styles it (D-036).
 - Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). Creating a timeline replaces `/timelines/new` with the new timeline's route.
 - Detail views are routes (not only component state), so the browser back button closes them and the unsaved-changes guard can intercept it.
 
@@ -131,14 +138,16 @@ db.version(1).stores({
 - Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
 - Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
 - Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
-- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is the drag handle: a ghost icon Button stacked above the link overlay, named "Reorder" + the rendered title (`aria-labelledby`).
+- Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. A node color sets the card background from the picker's `500` shade (D-034). Each color sets two CSS variables on the card (`--node-color`: the hue's `500`; `--node-tint`: its `300`), and shared classes use them. Light: `--node-tint`, hover mixes in 20% of `--node-color`. Dark: `--node-color` mixed into `--card` at 35%, 40% on hover (`color-mix` in oklab, opaque). The default card keeps `bg-card`. Colored cards override `--muted-foreground` (`oklch(0.35 0 0)` light, `oklch(0.85 0 0)` dark) so the excerpt stays at 4.5:1 or more on every color, hover included. The node's marker on the timeline line (`NodeMarker`) takes the same fill as the card with a `--node-color` outline; uncolored nodes keep the `primary` outline on `bg-background`. Classes live in `node-colors.ts` as complete literals per color, so Tailwind's scanner generates them and emits the theme variables they reference. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is the drag handle: a ghost icon Button stacked above the link overlay, named "Reorder" + the rendered title (`aria-labelledby`).
 
 ## Node detail and forms
 
 Components live in `src/features/nodes`.
 
-- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description). Saving appends the node at the end and closes the route back to the timeline.
+- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description, card color). Saving appends the node at the end and closes the route back to the timeline.
 - Detail (`NodeDetailDialog`, `nodes/:nodeId`): read mode shows the title (inline Markdown, as the dialog title), the description (`MarkdownBlock`) and the "Edit" and "Delete" actions. While the node loads the dialog shows skeletons; a node that does not exist or belongs to another timeline shows "Node not found".
+- Card color (`NodeColorPicker`): a fieldset "Card color" with a single-select Toggle Group of round swatches (radio semantics): "Default" (card background) followed by the `500` shade of each `NodeColor` (`--node-color`), labeled with the color name. The selected swatch shows a check icon (`neutral-950`, at least 4.3:1 on every `500` shade) and an outer ring. Selecting the active swatch again keeps it.
+- Header color (D-036): in read mode the dialog header uses the node's card surface (`nodeHeaderClasses`: the card background without hover, with the colored-card `--muted-foreground`); uncolored nodes keep `bg-popover`. In the create and edit forms the header previews the color picked in the form (`NodeForm` `onColorChange`); leaving the edit form returns to the stored color. Theme text colors stay legible on every hue (lowest: title 8.43:1, links 6.99:1, both dark yellow).
 - "Edit" swaps the read view for `NodeForm` inside the same dialog (component state, no route change) and focuses the title. Save and Cancel return to read mode and focus "Edit". Closing the dialog from edit mode closes the route (D-021).
 - Delete asks for confirmation (`ConfirmDialog`), deletes the node, then closes the route.
 
@@ -192,7 +201,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
     "updated_at": "…"
   },
   "nodes": [
-    { "id": "…", "title": "…", "description": "…", "position": 0, "created_at": "…", "updated_at": "…" }
+    { "id": "…", "title": "…", "description": "…", "color": "blue", "position": 0, "created_at": "…", "updated_at": "…" }
   ]
 }
 ```
@@ -200,6 +209,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 - Export: one timeline per file; nodes sorted by `position`, without `timeline_id`. `exportTimeline` reads the timeline and its nodes in one read transaction. File name: `timeline-<slug>-<yyyymmdd>.json` (`exportFileName`, local date of `exported_at`; `slugify` in `src/lib/slug.ts` keeps link text, drops link targets and diacritics, caps at 50 chars, falls back to `untitled`). The JSON is indented and saved through an object URL and a temporary `<a download>` (`downloadTimeline`, `src/features/transfer/export.ts`).
 - Validation (`parseTimelineFile`, `src/features/transfer/parse.ts`): files over 10 MB are rejected before reading; then JSON parse, `format`, supported `schema_version`, and the zod schema (required fields, UUID ids, ISO dates, `orientation` enum, titles trimmed and non-empty, `position` a non-negative integer). Unknown fields are stripped. Failures throw `InvalidImportFileError` with a user-facing message; schema errors list up to 3 issues as `path: message` (e.g. `nodes[1].title: Title is required`) and a count of the rest.
 - Node order on import comes from the array order; the `position` values are validated but not used.
+- Node `color` is optional in the file: absent means `null` (files exported before card colors), otherwise it must be `null` or a `NodeColor`. Export always writes it. Import as new and replace keep it.
 - The import repository functions re-validate their input with `timelineFileSchema`; all writes run in one transaction, so on any error nothing is written.
 
 ### Import flow (UI)
@@ -222,7 +232,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 
 - `next-themes` with `attribute="class"`, `defaultTheme="system"`; the choice is stored in `localStorage` under `theme`. `ThemeMenu` (list pane header, icon button "Theme") is a Dropdown Menu radio group: Light, Dark, System.
 - An inline script in `index.html` applies the stored theme (class and `color-scheme`) before the app loads, so a dark theme does not flash light. next-themes' own script is rendered as a data block (`type="application/json"`); it never runs in a client-only render.
-- Colors come only from the shadcn/ui tokens in `src/index.css` (`:root` and `.dark`). Tokens changed from the Nova preset for WCAG AA contrast (D-027): light `--muted-foreground` and `--destructive` are darker, dark `--destructive` is lighter.
+- UI colors come only from the shadcn/ui tokens in `src/index.css` (`:root` and `.dark`); node card colors come from the Tailwind palette (see Timeline view). Tokens changed from the Nova preset for WCAG AA contrast (D-027): light `--muted-foreground` and `--destructive` are darker, dark `--destructive` is lighter.
 
 ## Feedback (toasts)
 

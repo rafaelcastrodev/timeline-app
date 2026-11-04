@@ -23,6 +23,25 @@ describe('parseTimelineFile', () => {
     expect(await parseTimelineFile(jsonFile(withExtras))).toEqual(valid)
   })
 
+  it('accepts nodes without a color (older exports) as the default color', async () => {
+    const file = makeTimelineFile(2)
+    file.nodes[1]!.color = 'amber'
+    const legacy = {
+      ...file,
+      nodes: file.nodes.map(({ color, ...node }, index) =>
+        index === 0 ? node : { ...node, color },
+      ),
+    }
+    const parsed = await parseTimelineFile(jsonFile(legacy))
+    expect(parsed.nodes.map((node) => node.color)).toEqual([null, 'amber'])
+  })
+
+  it('rejects an unknown node color', async () => {
+    const file = makeTimelineFile(1)
+    const broken = { ...file, nodes: [{ ...file.nodes[0], color: 'slate' }] }
+    expect((await rejection(jsonFile(broken))).message).toContain('nodes[0].color: ')
+  })
+
   it('trims titles', async () => {
     const file = makeTimelineFile(1)
     file.timeline.title = '  Padded  '

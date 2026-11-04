@@ -3,17 +3,27 @@ import { useId } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { MarkdownEditor } from '@/components/markdown'
 import { Button } from '@/components/ui/button'
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useUnsavedChangesGuard } from '@/hooks/use-unsaved-changes-guard'
 import {
   nodeFormSchema,
   type NodeFormInput,
+  type NodeColor,
   type NodeFormValues,
   type TimelineNode,
 } from '@/types/models'
+import { NodeColorPicker } from './node-color-picker'
 
-const emptyValues: NodeFormInput = { title: '', description: '' }
+const emptyValues: NodeFormInput = { title: '', description: '', color: null }
 
 interface NodeFormProps {
   defaultValues?: NodeFormInput
@@ -26,6 +36,8 @@ interface NodeFormProps {
   onSaved: (node: TimelineNode) => void
   /** Called on Cancel, after confirming when there are unsaved changes. */
   onCancel: () => void
+  /** Called when the user picks a card color, so the dialog can preview it. */
+  onColorChange?: (color: NodeColor | null) => void
 }
 
 export function NodeForm({
@@ -35,6 +47,7 @@ export function NodeForm({
   onSubmit,
   onSaved,
   onCancel,
+  onColorChange,
 }: NodeFormProps) {
   const id = useId()
   const form = useForm({ resolver: zodResolver(nodeFormSchema), defaultValues })
@@ -89,6 +102,24 @@ export function NodeForm({
                   onBlur={field.onBlur}
                 />
               </Field>
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+              <FieldSet>
+                <FieldLegend variant="label">Card color</FieldLegend>
+                <NodeColorPicker
+                  value={field.value}
+                  onChange={(color) => {
+                    field.onChange(color)
+                    onColorChange?.(color)
+                  }}
+                  onBlur={field.onBlur}
+                />
+              </FieldSet>
             )}
           />
         </FieldGroup>

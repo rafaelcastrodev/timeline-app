@@ -24,6 +24,7 @@ async function seedTimeline(page: Page): Promise<string> {
       timeline_id: timelineId,
       title,
       description: `${title} *notes*`,
+      color: null,
       position,
       created_at: `2025-0${position + 1}-01T00:00:00.000Z`,
       updated_at: `2025-0${position + 4}-01T00:00:00.000Z`,

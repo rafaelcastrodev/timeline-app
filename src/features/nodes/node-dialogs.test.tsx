@@ -85,6 +85,41 @@ describe('node detail', () => {
     expect(stored!.updated_at).not.toBe(node.updated_at)
   })
 
+  it('picks a card color in the edit form and colors the card', async () => {
+    const { timeline, node } = await seed()
+    const { user } = renderAt(`/timelines/${timeline.id}/nodes/${node.id}`)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Day one' })
+    await user.click(within(dialog).getByRole('button', { name: 'Edit' }))
+    const form = await screen.findByRole('dialog', { name: 'Edit node' })
+    const colors = within(form).getByRole('group', { name: 'Card color' })
+    expect(within(colors).getAllByRole('radio')).toHaveLength(18)
+    expect(within(colors).getByRole('radio', { name: 'Default' })).toBeChecked()
+
+    await user.click(within(colors).getByRole('radio', { name: 'Indigo' }))
+    expect(within(colors).getByRole('radio', { name: 'Indigo' })).toBeChecked()
+    // The header previews the picked color before saving.
+    const header = () => document.querySelector('[data-slot=route-dialog-header]')
+    expect(header()).toHaveClass('[--node-color:var(--color-indigo-500)]', 'bg-(--node-tint)')
+    // Selecting the active swatch again keeps it selected.
+    await user.click(within(colors).getByRole('radio', { name: 'Indigo' }))
+    expect(within(colors).getByRole('radio', { name: 'Indigo' })).toBeChecked()
+    await user.click(within(form).getByRole('button', { name: 'Save' }))
+
+    await screen.findByRole('dialog', { name: 'Day one' })
+    expect(await getNode(node.id)).toMatchObject({ color: 'indigo' })
+    await waitFor(() => expect(header()).toHaveClass('[--node-color:var(--color-indigo-500)]'))
+    await user.keyboard('{Escape}')
+    const list = await screen.findByRole('list', { name: 'Nodes' })
+    const card = within(list)
+      .getByRole('link', { name: 'Day one' })
+      .closest('[data-slot=node-card]')
+    await waitFor(() => expect(card).toHaveAttribute('data-color', 'indigo'))
+    expect(card).toHaveClass('[--node-color:var(--color-indigo-500)]', 'bg-(--node-tint)')
+    const marker = card!.closest('li')!.querySelector('[data-slot=node-marker]')
+    expect(marker).toHaveClass('[--node-color:var(--color-indigo-500)]', 'border-(--node-color)')
+  })
+
   it('deletes the node after confirmation and closes', async () => {
     const { timeline, node } = await seed()
     await createNode(timeline.id, { title: 'Day two' })
@@ -132,6 +167,21 @@ describe('node create', () => {
     expect(nodes[1]).toMatchObject({ title: 'Day two', description: 'Rest', position: 1 })
     const list = await screen.findByRole('list', { name: 'Nodes' })
     await waitFor(() => expect(within(list).getAllByRole('heading', { level: 3 })).toHaveLength(2))
+  })
+})
+
+describe('node create color', () => {
+  it('creates a node with the chosen color', async () => {
+    const { timeline } = await seed()
+    const { user } = renderAt(`/timelines/${timeline.id}/nodes/new`)
+    const form = await screen.findByRole('dialog', { name: 'New node' })
+    await user.type(within(form).getByLabelText('Title'), 'Colored')
+    await user.click(within(form).getByRole('radio', { name: 'Emerald' }))
+    await user.click(within(form).getByRole('button', { name: 'Create' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    const nodes = await listNodes(timeline.id)
+    expect(nodes.at(-1)).toMatchObject({ title: 'Colored', color: 'emerald' })
   })
 })
 

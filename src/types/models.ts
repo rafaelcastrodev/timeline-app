@@ -3,6 +3,29 @@ import { z } from 'zod'
 export const orientationSchema = z.enum(['vertical', 'horizontal'])
 export type Orientation = z.infer<typeof orientationSchema>
 
+/** Card colors: the chromatic hues of the Tailwind palette. `null` on a node means the default card. */
+export const NODE_COLORS = [
+  'red',
+  'orange',
+  'amber',
+  'yellow',
+  'lime',
+  'green',
+  'emerald',
+  'teal',
+  'cyan',
+  'sky',
+  'blue',
+  'indigo',
+  'violet',
+  'purple',
+  'fuchsia',
+  'pink',
+  'rose',
+] as const
+export const nodeColorSchema = z.enum(NODE_COLORS)
+export type NodeColor = z.infer<typeof nodeColorSchema>
+
 export const isoDateTimeSchema = z.iso.datetime({ offset: true })
 const isoDateTime = isoDateTimeSchema
 
@@ -23,6 +46,7 @@ export const timelineNodeSchema = z.object({
   timeline_id: z.uuid(),
   title: z.string().min(1),
   description: z.string(),
+  color: nodeColorSchema.nullable(),
   position: z.int().nonnegative(),
   created_at: isoDateTime,
   updated_at: isoDateTime,
@@ -42,6 +66,7 @@ const timelineFields = z.object({
 const nodeFields = z.object({
   title: titleInput,
   description: z.string(),
+  color: nodeColorSchema.nullable(),
 })
 
 /** User-editable timeline fields for creation (forms, repository input). */
@@ -63,6 +88,7 @@ export type TimelineChanges = z.input<typeof timelineChangesSchema>
 /** User-editable node fields for creation (forms, repository input). */
 export const nodeInputSchema = nodeFields.extend({
   description: nodeFields.shape.description.default(''),
+  color: nodeFields.shape.color.default(null),
 })
 export type NodeInput = z.input<typeof nodeInputSchema>
 

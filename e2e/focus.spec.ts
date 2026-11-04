@@ -23,6 +23,7 @@ async function seedTimeline(page: Page): Promise<string> {
       timeline_id: timelineId,
       title,
       description: '',
+      color: null,
       position,
       created_at: AT,
       updated_at: AT,
