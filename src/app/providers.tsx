@@ -1,16 +1,18 @@
 import { ThemeProvider } from 'next-themes'
 import type { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { THEME_STORAGE_KEY } from '@/lib/storage'
 
 /**
  * App-wide providers: theme (light, dark or system; the `dark` class on `<html>`, stored in
- * `localStorage` under `theme`, which the inline script in `index.html` also reads) and toasts.
+ * `localStorage` under `THEME_STORAGE_KEY`, which the inline script in `index.html` also reads) and toasts.
  */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
       defaultTheme="system"
+      storageKey={THEME_STORAGE_KEY}
       enableSystem
       disableTransitionOnChange
       // next-themes renders an inline script meant for server rendering; on the client React never

@@ -1,11 +1,12 @@
 import { Dexie, type EntityTable } from 'dexie'
+import { DATABASE_NAME } from '@/lib/storage'
 import { DEFAULT_NODE_LAYER, type Timeline, type TimelineNode } from '@/types/models'
 
 export class TimelineDatabase extends Dexie {
   declare timelines: EntityTable<Timeline, 'id'>
   declare nodes: EntityTable<TimelineNode, 'id'>
 
-  constructor(name = 'timeline-app') {
+  constructor(name = DATABASE_NAME) {
     super(name)
     const stores = {
       timelines: 'id, updated_at',

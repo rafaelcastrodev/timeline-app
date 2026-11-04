@@ -12,10 +12,10 @@
     <meta name="color-scheme" content="light dark" />
     <title>Timeline App</title>
     <script>
-      // Applies the stored theme (next-themes, key "theme") before the app loads, so a dark theme
+      // Applies the stored theme (next-themes, key `THEME_STORAGE_KEY` in src/lib/storage.ts) before the app loads, so a dark theme
       // does not flash light.
       try {
-        const theme = localStorage.getItem('theme') || 'system'
+        const theme = localStorage.getItem('timeline-app:theme') || 'system'
         const dark =
           theme === 'dark' ||
           (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)

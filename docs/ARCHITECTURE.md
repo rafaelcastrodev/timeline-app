@@ -36,7 +36,7 @@ src/
     nodes/          node card, node detail, node form, sortable logic
     transfer/       import/export (parser, export download, import flow UI)
   hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard, useReturnFocus
-  lib/              dates, focus, slug, utils
+  lib/              dates, focus, slug, storage, utils
   types/            zod schemas: records and forms (models.ts), export file (transfer.ts)
   test/             Vitest setup
 e2e/                Playwright specs
@@ -73,6 +73,10 @@ interface TimelineNode {
 `NodeColor` is one of the chromatic Tailwind hues: `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose` (`NODE_COLORS`). Neutral palettes (slate, gray, zinc, …) are excluded (D-032).
 
 `NodeLayer` is an integer from 1 to 5 (`NODE_LAYERS`, `DEFAULT_NODE_LAYER = 1`, D-037).
+
+### Browser storage names
+
+All names live in `src/lib/storage.ts` and start with the prefix `timeline-app` (`STORAGE_PREFIX`), because every GitHub Pages project site of one account shares the `<user>.github.io` origin and its storage (D-038). IndexedDB database: `timeline-app` (`DATABASE_NAME`). `localStorage`: `timeline-app:theme` (`THEME_STORAGE_KEY`); the inline script in `index.html` repeats the literal and a unit test checks they match. New keys use `timeline-app:<name>`.
 
 ### Dexie schema (v3)
 
@@ -236,7 +240,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 
 ## Theme
 
-- `next-themes` with `attribute="class"`, `defaultTheme="system"`; the choice is stored in `localStorage` under `theme`. `ThemeMenu` (list pane header, icon button "Theme") is a Dropdown Menu radio group: Light, Dark, System.
+- `next-themes` with `attribute="class"`, `defaultTheme="system"`; the choice is stored in `localStorage` under `timeline-app:theme` (`storageKey`). `ThemeMenu` (list pane header, icon button "Theme") is a Dropdown Menu radio group: Light, Dark, System.
 - An inline script in `index.html` applies the stored theme (class and `color-scheme`) before the app loads, so a dark theme does not flash light. next-themes' own script is rendered as a data block (`type="application/json"`); it never runs in a client-only render.
 - UI colors come only from the shadcn/ui tokens in `src/index.css` (`:root` and `.dark`); node card colors come from the Tailwind palette (see Timeline view). Tokens changed from the Nova preset for WCAG AA contrast (D-027): light `--muted-foreground` and `--destructive` are darker, dark `--destructive` is lighter.
 
