@@ -32,10 +32,10 @@ src/
   features/
     timelines/      dashboard list, timeline form, timeline view
     nodes/          node card, node detail, node form, sortable logic
-    transfer/       import/export (schema, parser, UI)
+    transfer/       import/export (parser, export download, import flow UI)
   hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard
   lib/              dates, slug, utils
-  types/
+  types/            zod schemas: records and forms (models.ts), export file (transfer.ts)
   test/             Vitest setup
 e2e/                Playwright specs
 ```
@@ -87,7 +87,8 @@ db.version(1).stores({
 ### Code layout
 
 - zod schemas and inferred types: `src/types/models.ts`. Record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
-- Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
+- Export file schema: `src/types/transfer.ts` (`timelineFileSchema`, type `TimelineFile`), built from the shared field schemas in `models.ts`.
+- Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, `src/db/transfer.ts` (`exportTimeline`, `importTimeline`, `replaceTimeline`), re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
 - Test helper `setupTestDatabase()` (`src/test/db.ts`) clears tables and fakes only `Date`; timers stay real for fake-indexeddb.
 
@@ -116,15 +117,15 @@ db.version(1).stores({
 - Growing the limit (instead of cursor pagination) keeps the list reactive when `updated_at` changes reorder items. `useLiveQuery` keeps the previous result while the query for a new limit runs, so the list does not flash.
 - States: skeleton rows while loading; empty state when there are no timelines.
 - List item: a `NavLink` (highlighted while its timeline or a child route is open) with title (inline Markdown, links as text), description excerpt (2 lines), node count, relative `updated_at` (`formatRelativeTime`, absolute date in the tooltip).
-- Actions: new timeline, import as new timeline (phase 7).
+- Actions: new timeline, import as new timeline (icon button "Import timeline", see Import / Export).
 - Nodes inside a timeline are rendered in full (no virtualization or infinite scroll); virtualization conflicts with drag and drop and is unnecessary at personal scale.
 
 ## Timeline view
 
-- Header: back action (mobile), title, orientation toggle, "+ Node" action, actions menu (edit, export, import-replace, delete).
+- Header: back action (mobile), title, orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
 - Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query.
 - "+ Node": one link to `nodes/new`, a floating action button (bottom-right, icon only) below `lg` and a regular header button from `lg` up. The node area has bottom padding below `lg` so the last card stays clear of it.
-- Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails), then replaces the route with `/`.
+- Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails; optional `children` render between the description and the actions), then replaces the route with `/`.
 - Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
 - Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
 - Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
@@ -194,10 +195,19 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 }
 ```
 
-- Export: one timeline per file; nodes sorted by `position`. File name: `timeline-<slug>-<yyyymmdd>.json`.
-- Validation: zod schema checks `format`, supported `schema_version`, required fields, ISO dates, `orientation` enum. Unknown fields are stripped. Reject files over 10 MB before parsing.
-- Preview before writing: timeline title and node count.
-- All writes run in one transaction; on any error nothing is written.
+- Export: one timeline per file; nodes sorted by `position`, without `timeline_id`. `exportTimeline` reads the timeline and its nodes in one read transaction. File name: `timeline-<slug>-<yyyymmdd>.json` (`exportFileName`, local date of `exported_at`; `slugify` in `src/lib/slug.ts` keeps link text, drops link targets and diacritics, caps at 50 chars, falls back to `untitled`). The JSON is indented and saved through an object URL and a temporary `<a download>` (`downloadTimeline`, `src/features/transfer/export.ts`).
+- Validation (`parseTimelineFile`, `src/features/transfer/parse.ts`): files over 10 MB are rejected before reading; then JSON parse, `format`, supported `schema_version`, and the zod schema (required fields, UUID ids, ISO dates, `orientation` enum, titles trimmed and non-empty, `position` a non-negative integer). Unknown fields are stripped. Failures throw `InvalidImportFileError` with a user-facing message; schema errors list up to 3 issues as `path: message` (e.g. `nodes[1].title: Title is required`) and a count of the rest.
+- Node order on import comes from the array order; the `position` values are validated but not used.
+- The import repository functions re-validate their input with `timelineFileSchema`; all writes run in one transaction, so on any error nothing is written.
+
+### Import flow (UI)
+
+`useTimelineImport(target, onImported?)` (`src/features/transfer/use-timeline-import.tsx`) returns `chooseFile()` and a `dialog` element (hidden file input + dialog). D-025.
+
+1. `chooseFile()` opens the browser's file picker directly from the click/menu select (dashboard "Import timeline" button, timeline menu "Replace from file"). The input is cleared first so the same file can be picked again. The two inputs are labeled "File to import" and "File to replace with".
+2. The file is parsed. Nothing is written before the user confirms.
+3. Valid file: a `ConfirmDialog` with the preview (`ImportPreview`: inline title, node count, export date). Import as new: "Import this timeline?" / "Import", then navigates to the new timeline. Replace: "Replace this timeline?" / destructive "Replace", stating that the change cannot be undone; this dialog is the replace confirmation. A failed write keeps the dialog open with the error.
+4. Invalid file: "Could not import the file" with the parser message, actions "Close" and "Choose another file" (reopens the picker from the click).
 
 ### Modes
 

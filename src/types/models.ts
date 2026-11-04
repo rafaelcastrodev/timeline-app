@@ -3,7 +3,8 @@ import { z } from 'zod'
 export const orientationSchema = z.enum(['vertical', 'horizontal'])
 export type Orientation = z.infer<typeof orientationSchema>
 
-const isoDateTime = z.iso.datetime({ offset: true })
+export const isoDateTimeSchema = z.iso.datetime({ offset: true })
+const isoDateTime = isoDateTimeSchema
 
 /** Persisted timeline record. Field names match the JSON export format. */
 export const timelineSchema = z.object({
@@ -28,7 +29,9 @@ export const timelineNodeSchema = z.object({
 })
 export type TimelineNode = z.infer<typeof timelineNodeSchema>
 
-const titleInput = z.string().trim().min(1, 'Title is required')
+/** User-entered title: trimmed, required. */
+export const titleSchema = z.string().trim().min(1, 'Title is required')
+const titleInput = titleSchema
 
 const timelineFields = z.object({
   title: titleInput,

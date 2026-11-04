@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Active phase: **6. Drag and drop** (implementation done; manual check on a real touch device pending).
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence). 87 unit/integration tests; E2E dashboard, timeline view, node and reorder flows pass on mobile and desktop (touch long press emulated via CDP on mobile).
-- Next step: manual reorder check on a real touch device (long press on the grip drags; swiping elsewhere and on the grip scrolls), then phase 7, first item.
+- Active phase: **7. Import / Export** (done). Phase 6 manual check on a real touch device still pending.
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence), phase 7 (JSON export download, import parser with size limit and readable errors, preview dialog, "import as new" from the dashboard and "replace from file" from the timeline menu, transactional writes). 116 unit/integration tests; E2E dashboard, timeline view, node, reorder and transfer flows pass on mobile and desktop (touch long press emulated via CDP on mobile).
+- Next step: manual reorder check on a real touch device (long press on the grip drags; swiping elsewhere and on the grip scrolls), then phase 8, first item.
 
 ## Phases
 
@@ -72,10 +72,10 @@ Done when: E2E: create/view/edit/delete a node; with a dirty form, Esc/X/back/Ca
 Done when: E2E: reorder by mouse and by keyboard, reload, order kept. Manual check on a real touch device.
 
 ### 7. Import / Export
-- [ ] Export timeline to JSON (format in `docs/ARCHITECTURE.md`).
-- [ ] Import parser with zod validation, size limit, readable errors.
-- [ ] Preview step (title, node count).
-- [ ] "Import as new" (dashboard) and "Replace" (timeline menu, with confirmation).
+- [x] Export timeline to JSON (format in `docs/ARCHITECTURE.md`).
+- [x] Import parser with zod validation, size limit, readable errors.
+- [x] Preview step (title, node count).
+- [x] "Import as new" (dashboard) and "Replace" (timeline menu, with confirmation).
 
 Done when: round trip (export → import as new) produces equivalent data with node `created_at` preserved; replace keeps the target id; invalid files write nothing and show an error.
 

@@ -1,10 +1,11 @@
-import { ListIcon, PlusIcon } from 'lucide-react'
-import { Link } from 'react-router'
+import { FileUpIcon, ListIcon, PlusIcon } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
 import { EmptyState } from '@/components/common/empty-state'
 import { LoadMoreSentinel } from '@/components/common/load-more-sentinel'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTimelineCount, useTimelines } from '@/db'
+import { useTimelineImport } from '@/features/transfer/use-timeline-import'
 import { useInfiniteLimit } from '@/hooks/use-infinite-limit'
 import { TimelineListItem } from './timeline-list-item'
 
@@ -12,6 +13,10 @@ export const TIMELINE_PAGE_SIZE = 20
 
 /** Master pane: timelines by recent activity, with infinite scroll. */
 export function TimelineListPane() {
+  const navigate = useNavigate()
+  const importFlow = useTimelineImport({ mode: 'new' }, (timeline) =>
+    navigate(`/timelines/${timeline.id}`),
+  )
   const { limit, loadMore } = useInfiniteLimit(TIMELINE_PAGE_SIZE)
   const timelines = useTimelines(limit)
   const total = useTimelineCount()
@@ -25,7 +30,16 @@ export function TimelineListPane() {
   return (
     <div className="flex flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background px-4 py-3">
-        <h1 className="text-lg font-semibold">Timelines</h1>
+        <h1 className="flex-1 text-lg font-semibold">Timelines</h1>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label="Import timeline"
+          title="Import timeline"
+          onClick={importFlow.chooseFile}
+        >
+          <FileUpIcon aria-hidden="true" />
+        </Button>
         <Button asChild size="sm">
           <Link to="/timelines/new">
             <PlusIcon data-icon="inline-start" aria-hidden="true" />
@@ -60,6 +74,7 @@ export function TimelineListPane() {
           <LoadMoreSentinel enabled={hasMore} onLoadMore={loadMore} />
         </>
       )}
+      {importFlow.dialog}
     </div>
   )
 }

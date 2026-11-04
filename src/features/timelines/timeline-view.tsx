@@ -1,5 +1,7 @@
 import {
   ArrowLeftIcon,
+  FileDownIcon,
+  FileUpIcon,
   ListPlusIcon,
   MoreVerticalIcon,
   PencilIcon,
@@ -17,11 +19,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { deleteTimeline, updateTimeline, useNodes, useTimeline } from '@/db'
 import { NodeList } from '@/features/nodes/node-list'
+import { downloadTimeline } from '@/features/transfer/export'
+import { useTimelineImport } from '@/features/transfer/use-timeline-import'
 import type { Timeline } from '@/types/models'
 import { OrientationToggle } from './orientation-toggle'
 
@@ -76,6 +81,7 @@ export function TimelineView() {
 function TimelineDetail({ timeline }: { timeline: Timeline }) {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const replaceFlow = useTimelineImport({ mode: 'replace', timelineId: timeline.id })
 
   return (
     <div className="flex flex-col">
@@ -116,6 +122,21 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
                 Edit
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                downloadTimeline(timeline.id).catch((error: unknown) => {
+                  console.error('Could not export the timeline', error)
+                })
+              }}
+            >
+              <FileDownIcon aria-hidden="true" />
+              Export
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={replaceFlow.chooseFile}>
+              <FileUpIcon aria-hidden="true" />
+              Replace from file
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
               <Trash2Icon aria-hidden="true" />
               Delete
@@ -147,6 +168,8 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
           await navigate('/', { replace: true })
         }}
       />
+
+      {replaceFlow.dialog}
 
       <Outlet context={timeline} />
     </div>

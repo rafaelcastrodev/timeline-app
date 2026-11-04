@@ -21,3 +21,26 @@ export async function seedRecords(
     db.close()
   }, records)
 }
+
+/** Reads every record from IndexedDB. */
+export async function readRecords(
+  page: Page,
+): Promise<{ timelines: Array<Record<string, unknown>>; nodes: Array<Record<string, unknown>> }> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('timeline-app')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const tx = db.transaction(['timelines', 'nodes'], 'readonly')
+    const all = (store: string) =>
+      new Promise<Array<Record<string, unknown>>>((resolve, reject) => {
+        const request = tx.objectStore(store).getAll()
+        request.onsuccess = () => resolve(request.result as Array<Record<string, unknown>>)
+        request.onerror = () => reject(request.error)
+      })
+    const [timelines, nodes] = await Promise.all([all('timelines'), all('nodes')])
+    db.close()
+    return { timelines, nodes }
+  })
+}

@@ -90,3 +90,11 @@ Rationale: `PointerSensor` also handles touch and, per the dnd-kit docs, needs `
 ## D-024 — Optimistic reorder reconciled against the live query (2026-11-03)
 After a drop, the new id order is kept in component state and shown until the live query returns the same order; it is discarded if the set of nodes changes, and on a failed write (only the latest request can discard it), which shows an inline alert. Reorder failures are not toasts yet (toasts are phase 8).
 Rationale: no flash back to the old order between the drop and the IndexedDB commit, consecutive drags do not flicker, and an order kept in state never overrides a later change from another tab.
+
+## D-025 — Import flow: file picker first, one preview dialog that confirms (2026-11-03)
+"Import timeline" (dashboard) and "Replace from file" (timeline menu) open the file picker directly. After parsing, one `ConfirmDialog` shows the preview (title, node count, export date) and the confirm action; for replace it is the destructive confirmation required by F11, so there is no second prompt. Rejected files show their error in a dialog with "Choose another file". The flow is component state (`useTimelineImport`), not a route.
+Rationale: one click less than an intermediate "choose a file" dialog; the preview is the information the user needs to confirm a replace, so a separate confirmation would repeat it; a `File` cannot be carried in a URL, and closing the dialog has nothing to guard. Errors are not toasts yet (toasts are phase 8).
+
+## D-026 — Export file schema in `src/types`, array order wins on import (2026-11-03)
+The file format schema lives in `src/types/transfer.ts` and is used by both the parser (`src/features/transfer`) and the transfer repository (`src/db/transfer.ts`), which re-validates its input. On import, node order comes from the array order and the `position` values are only validated. Ids in the file must be UUIDs even though both modes regenerate them.
+Rationale: the repository cannot depend on a feature folder; the export writes nodes sorted by position, so array order and positions agree for files from the app, and array order is what a user sees when editing a file by hand. Validating the full record shape keeps the format strict and documented.

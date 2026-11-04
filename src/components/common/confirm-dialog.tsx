@@ -15,6 +15,8 @@ interface ConfirmDialogProps {
   onOpenChange: (open: boolean) => void
   title: string
   description: ReactNode
+  /** Extra content between the description and the actions. */
+  children?: ReactNode
   confirmLabel: string
   cancelLabel?: string
   destructive?: boolean
@@ -34,6 +36,7 @@ export function ConfirmDialog({
   destructive = false,
   onConfirm,
   onCancel,
+  children,
 }: ConfirmDialogProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +70,7 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
