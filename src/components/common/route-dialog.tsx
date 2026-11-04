@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useReturnFocus } from '@/hooks/use-return-focus'
 
 interface RouteDialogProps {
   /** Dialog heading and accessible name. May be rendered Markdown (node titles). */
@@ -18,12 +19,15 @@ interface RouteDialogProps {
 
 /**
  * Dialog whose open state is its route: it is open while mounted. Full screen below `lg`,
- * centered modal from `lg` up.
+ * centered modal from `lg` up. On close, focus returns to the element that opened it (or the page
+ * heading when that element is gone).
  */
 export function RouteDialog({ title, description, onClose, children }: RouteDialogProps) {
+  const returnFocus = useReturnFocus()
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        {...returnFocus}
         // Without a description, opt out of Radix's aria-describedby wiring (and its warning).
         {...(description ? {} : { 'aria-describedby': undefined })}
         className="inset-0 flex h-dvh max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-none ring-0 sm:max-w-none lg:inset-auto lg:top-1/2 lg:left-1/2 lg:h-auto lg:max-h-[calc(100dvh-4rem)] lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:ring-1"

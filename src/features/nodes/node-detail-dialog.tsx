@@ -1,6 +1,7 @@
 import { PencilIcon, Trash2Icon } from 'lucide-react'
 import { useState } from 'react'
 import { useOutletContext, useParams } from 'react-router'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { RouteDialog } from '@/components/common/route-dialog'
 import { MarkdownBlock, MarkdownInline } from '@/components/markdown'
@@ -64,7 +65,10 @@ export function NodeDetailDialog() {
           submitLabel="Save"
           autoFocusTitle
           onSubmit={(values) => updateNode(node.id, values)}
-          onSaved={leaveForm}
+          onSaved={() => {
+            toast.success('Node saved')
+            leaveForm()
+          }}
           onCancel={leaveForm}
         />
       </RouteDialog>
@@ -111,6 +115,7 @@ export function NodeDetailDialog() {
             setDeleting(false)
             throw error
           }
+          toast.success('Node deleted')
           close()
         }}
       />

@@ -6,6 +6,7 @@
 |---|---|---|
 | Build | Vite + React + TypeScript (strict) | TypeScript pinned to 6.0.x until typescript-eslint supports 7 (D-010) |
 | Styling | Tailwind CSS v4 | |
+| Theme | `next-themes` | Light, dark or system; `dark` class on `<html>` (D-029) |
 | Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` | Mouse, touch and keyboard sensors (D-023) |
@@ -13,8 +14,9 @@
 | Forms | react-hook-form + `@hookform/resolvers` (zod) | zod schemas are shared with import validation. Fields use shadcn/ui `Field` |
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
 | IDs | `crypto.randomUUID()` | |
+| PWA | `vite-plugin-pwa` (Workbox `generateSW`) + `@vite-pwa/assets-generator` | Precached app shell, installable (D-031) |
 | Unit/integration tests | Vitest + Testing Library + `fake-indexeddb` | |
-| E2E tests | Playwright (mobile and desktop viewports) | Projects: `mobile` 360×800 with touch, `desktop` 1280×800; Chromium |
+| E2E tests | Playwright (mobile and desktop viewports) + `@axe-core/playwright` | Projects: `mobile` 360×800 with touch, `desktop` 1280×800; Chromium |
 | Lint / format | ESLint (typescript-eslint, react-hooks, react-refresh) + Prettier (Tailwind class sorting) | |
 
 Library versions: latest stable at setup time. Check each library's current docs during phase 0 (APIs differ across major versions, notably Tailwind v4 setup and shadcn/ui CLI).
@@ -23,18 +25,18 @@ Library versions: latest stable at setup time. Check each library's current docs
 
 ```
 src/
-  app/              router, layouts, providers
+  app/              router, layouts, providers (theme, toaster)
   components/
     ui/             shadcn/ui generated components
     markdown/       Markdown renderers and editor
-    common/         shared app components (ConfirmDialog, EmptyState, LoadMoreSentinel, RouteDialog)
+    common/         shared app components (ConfirmDialog, EmptyState, LoadMoreSentinel, RouteDialog, ThemeMenu)
   db/               Dexie instance, schema, repositories, migrations
   features/
     timelines/      dashboard list, timeline form, timeline view
     nodes/          node card, node detail, node form, sortable logic
     transfer/       import/export (parser, export download, import flow UI)
-  hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard
-  lib/              dates, slug, utils
+  hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard, useReturnFocus
+  lib/              dates, focus, slug, utils
   types/            zod schemas: records and forms (models.ts), export file (transfer.ts)
   test/             Vitest setup
 e2e/                Playwright specs
@@ -103,8 +105,8 @@ db.version(1).stores({
 /timelines/:timelineId/nodes/:nodeId   node detail (read mode, "Edit" switches to the form in place)
 ```
 
-- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router. `AppLayout` (`src/app/app-layout.tsx`) renders the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
-- Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout shows the list when no `:timelineId` param is matched and the detail pane otherwise (CSS `hidden` + `lg:` overrides, no media-query hook).
+- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router inside `AppProviders` (`src/app/providers.tsx`: theme provider and toaster). `AppLayout` (`src/app/app-layout.tsx`) renders a visually hidden `<h1>` ("Timeline App"), the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
+- Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout hides the list while a `:timelineId` param is matched (CSS `hidden` + `lg:` overrides, no media-query hook). `<main>` is always rendered so the page keeps its main landmark; without a selection it holds only the desktop empty state (hidden below `lg`) and portaled dialogs.
 - Desktop (≥ `lg`): two panes, each scrolling on its own. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state.
 - Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016). Its title is a `ReactNode`, so node titles render as inline Markdown.
 - Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). Creating a timeline replaces `/timelines/new` with the new timeline's route.
@@ -117,13 +119,13 @@ db.version(1).stores({
 - Growing the limit (instead of cursor pagination) keeps the list reactive when `updated_at` changes reorder items. `useLiveQuery` keeps the previous result while the query for a new limit runs, so the list does not flash.
 - States: skeleton rows while loading; empty state when there are no timelines.
 - List item: a `NavLink` (highlighted while its timeline or a child route is open) with title (inline Markdown, links as text), description excerpt (2 lines), node count, relative `updated_at` (`formatRelativeTime`, absolute date in the tooltip).
-- Actions: new timeline, import as new timeline (icon button "Import timeline", see Import / Export).
+- Header: `h2` "Timelines", theme menu, import as new timeline (icon button "Import timeline", see Import / Export), new timeline.
 - Nodes inside a timeline are rendered in full (no virtualization or infinite scroll); virtualization conflicts with drag and drop and is unnecessary at personal scale.
 
 ## Timeline view
 
-- Header: back action (mobile), title, orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
-- Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query.
+- Header: back action (mobile), title (`h2`), orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
+- Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query. A failed write shows an error toast.
 - "+ Node": one link to `nodes/new`, a floating action button (bottom-right, icon only) below `lg` and a regular header button from `lg` up. The node area has bottom padding below `lg` so the last card stays clear of it.
 - Delete asks for confirmation (`ConfirmDialog`, which stays open until the action settles and shows its error if it fails; optional `children` render between the description and the actions), then replaces the route with `/`.
 - Below the header: description (full Markdown), then the nodes (`NodeList`, `src/features/nodes`): skeleton while loading, empty state with an "Add first node" action when there are none.
@@ -170,7 +172,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 - Dragging starts only from the card's drag handle (`setActivatorNodeRef`); tapping elsewhere on the card opens the detail. The handle has `touch-action: manipulation` and no text selection or touch callout.
 - Auto-scroll near container edges is dnd-kit's built-in. The horizontal scroller turns snapping off while a drag is active.
 - Screen reader announcements use positions ("Picked up node at position 2 of 4"), not titles (titles are Markdown). A move is announced only when the target position changes.
-- Optimistic UI (D-024): on drop, `useNodeOrder` shows the new order at once and calls `reorderNodes` with the full id list. The optimistic order is dropped when the live query delivers the same order, or when nodes are added or removed meanwhile. If the write fails, the stored order is shown again with an inline alert ("Could not save the new order"), cleared by the next move.
+- Optimistic UI (D-024): on drop, `useNodeOrder` shows the new order at once and calls `reorderNodes` with the full id list. The optimistic order is dropped when the live query delivers the same order, or when nodes are added or removed meanwhile. If the write fails, the stored order is shown again with an error toast ("Could not save the new order").
 
 ## Import / Export
 
@@ -216,8 +218,39 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 | Import as new | Dashboard | New `id`, `created_at = now`; title/description/orientation from file | New `id`s; `created_at`/`updated_at` from file; `position` from array order |
 | Replace | Timeline actions menu (requires confirmation) | Keeps target `id` and `created_at`; title/description/orientation from file; `updated_at = now` | Existing nodes deleted; imported nodes get new `id`s (avoids collisions with other timelines); `created_at`/`updated_at` from file |
 
+## Theme
+
+- `next-themes` with `attribute="class"`, `defaultTheme="system"`; the choice is stored in `localStorage` under `theme`. `ThemeMenu` (list pane header, icon button "Theme") is a Dropdown Menu radio group: Light, Dark, System.
+- An inline script in `index.html` applies the stored theme (class and `color-scheme`) before the app loads, so a dark theme does not flash light. next-themes' own script is rendered as a data block (`type="application/json"`); it never runs in a client-only render.
+- Colors come only from the shadcn/ui tokens in `src/index.css` (`:root` and `.dark`). Tokens changed from the Nova preset for WCAG AA contrast (D-027): light `--muted-foreground` and `--destructive` are darker, dark `--destructive` is lighter.
+
+## Feedback (toasts)
+
+Sonner `Toaster` (`src/components/ui/sonner.tsx`), mounted once in `AppProviders`, bottom center, raised to `5.5rem` on small screens so it stays clear of the floating "Add node" button. D-030.
+
+- Success: timeline created / saved / deleted, node created / saved / deleted, timeline exported / imported / replaced.
+- Error: export, orientation change and reorder failures (actions without a form or dialog to show them).
+- Form save errors stay inline in the form; confirmation and import errors stay in their dialog (`ConfirmDialog` error, "Could not import the file").
+
+## Accessibility
+
+- Landmarks: `<header>` with the visually hidden `<h1>`, `<aside aria-label="Timelines">`, `<main>`. Headings: `h1` app, `h2` per pane (list, timeline), `h3` node cards. Every icon-only control has an `aria-label`; icons are `aria-hidden`.
+- Focus after dialogs (`useReturnFocus`, `src/hooks/use-return-focus.ts`, used by `RouteDialog` and `ConfirmDialog`): these dialogs have no Radix `Trigger`, so Radix would leave focus on `<body>`. The hook records the focused element when the dialog opens (for a dropdown menu item, the menu's trigger) and focuses it again on close; when it is gone or hidden (deleted card, list pane hidden on mobile), focus goes to the page heading. D-028.
+- Focus after navigation (`AppLayout`): when a navigation leaves focus nowhere (on `<body>` or on an element that is gone or hidden, e.g. the list link on mobile), focus moves to the page heading of the view now shown, waiting up to 2 s for a view that is still loading. It runs after dialogs closed by the same navigation have restored their focus.
+- Page headings carry `pageHeadingProps` (`src/lib/focus.ts`: `tabIndex={-1}`, `data-page-heading`); the last visible one wins, so the timeline heading is preferred over the list heading on desktop.
+- Automated checks: `e2e/a11y.spec.ts` runs axe (WCAG 2.0/2.1/2.2 A and AA + best practices) on the main screens in light and dark themes, on both viewports. While a modal menu or dialog is open, the rules about content Radix hides on purpose are skipped (`aria-hidden-focus`, `landmark-one-main`, `page-has-heading-one`, `region`). `e2e/focus.spec.ts` covers focus return.
+
+## PWA and offline
+
+`vite-plugin-pwa` in `vite.config.ts` (D-031):
+
+- `generateSW` precaches every built asset (JS, CSS, HTML, fonts, icons); navigations fall back to `index.html`, so deep links load offline.
+- `registerType: 'autoUpdate'` with the injected register script: a new version installs in the background and is used on the next load; the page is never reloaded automatically (no lost edits).
+- Manifest: "Timeline App" / "Timelines", `display: standalone`, icons 64/192/512 and a maskable 512. Icons, `favicon.ico` and the Apple touch icon are generated from `public/favicon.svg` with `npm run generate-pwa-assets` (`pwa-assets.config.ts`) and committed.
+- The service worker is built only by `npm run build` (not active in `npm run dev`, so E2E runs against the dev server without it).
+
 ## Risks
 
-- IndexedDB eviction (notably Safari for non-installed web apps after a period of no use). Mitigation: `navigator.storage.persist()`, optional PWA install, regular JSON exports.
+- IndexedDB eviction (notably Safari for non-installed web apps after a period of no use). Mitigation: `navigator.storage.persist()`, PWA install, regular JSON exports.
 - Drag vs. scroll on touch devices. Mitigation: drag handle + activation delay; test on a real device.
 - `beforeunload` text cannot be customized.

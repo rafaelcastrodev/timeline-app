@@ -1,5 +1,6 @@
 import { arrayMove } from '@dnd-kit/sortable'
 import { useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { reorderNodes } from '@/db'
 import type { TimelineNode } from '@/types/models'
 
@@ -26,11 +27,10 @@ export function moveId(ids: string[], activeId: string, overId: string): string[
 /**
  * Manual node order with optimistic updates: `move` shows the new order at once and persists it
  * with `reorderNodes`. The optimistic order is dropped when the live query delivers the stored
- * order, or when the write fails (`failed` is then set until the next move).
+ * order, or when the write fails (the stored order shows again, with an error toast).
  */
 export function useNodeOrder(timelineId: string, nodes: TimelineNode[]) {
   const [pending, setPending] = useState<string[] | null>(null)
-  const [failed, setFailed] = useState(false)
   const latestRequest = useRef(0)
 
   const storedIds = nodes.map((node) => node.id)
@@ -52,15 +52,14 @@ export function useNodeOrder(timelineId: string, nodes: TimelineNode[]) {
     if (!next) return
     const request = ++latestRequest.current
     setPending(next)
-    setFailed(false)
     reorderNodes(timelineId, next).catch((error: unknown) => {
       console.error(error)
       // An older request failing must not undo a newer optimistic order.
       if (request !== latestRequest.current) return
       setPending(null)
-      setFailed(true)
+      toast.error('Could not save the new order. Try again.')
     })
   }
 
-  return { orderedNodes, ids, move, failed }
+  return { orderedNodes, ids, move }
 }

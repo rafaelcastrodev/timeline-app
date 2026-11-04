@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Outlet, useNavigate, useParams } from 'react-router'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { EmptyState } from '@/components/common/empty-state'
 import { MarkdownBlock, MarkdownInline } from '@/components/markdown'
@@ -27,6 +28,7 @@ import { deleteTimeline, updateTimeline, useNodes, useTimeline } from '@/db'
 import { NodeList } from '@/features/nodes/node-list'
 import { downloadTimeline } from '@/features/transfer/export'
 import { useTimelineImport } from '@/features/transfer/use-timeline-import'
+import { pageHeadingProps } from '@/lib/focus'
 import type { Timeline } from '@/types/models'
 import { OrientationToggle } from './orientation-toggle'
 
@@ -87,7 +89,7 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
     <div className="flex flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background px-2 py-3 lg:px-4">
         <BackToList />
-        <h2 className="min-w-0 flex-1 text-lg font-semibold">
+        <h2 {...pageHeadingProps} className="min-w-0 flex-1 text-lg font-semibold outline-none">
           <MarkdownInline>{timeline.title}</MarkdownInline>
         </h2>
         <OrientationToggle
@@ -95,7 +97,8 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
           onChange={(orientation) => {
             // The live query re-renders with the stored value; on failure the toggle stays put.
             updateTimeline(timeline.id, { orientation }).catch((error: unknown) => {
-              console.error('Could not change the orientation', error)
+              console.error(error)
+              toast.error('Could not change the orientation. Try again.')
             })
           }}
         />
@@ -124,9 +127,13 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
-                downloadTimeline(timeline.id).catch((error: unknown) => {
-                  console.error('Could not export the timeline', error)
-                })
+                downloadTimeline(timeline.id).then(
+                  () => toast.success('Timeline exported'),
+                  (error: unknown) => {
+                    console.error(error)
+                    toast.error('Could not export the timeline. Try again.')
+                  },
+                )
               }}
             >
               <FileDownIcon aria-hidden="true" />
@@ -165,6 +172,7 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
         destructive
         onConfirm={async () => {
           await deleteTimeline(timeline.id)
+          toast.success('Timeline deleted')
           await navigate('/', { replace: true })
         }}
       />

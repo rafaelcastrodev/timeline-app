@@ -25,7 +25,7 @@ Personal application. No backend: all data stays in the browser (IndexedDB). JSO
 ## Non-functional
 
 - Mobile first, responsive up to desktop.
-- Works offline. PWA install is optional (phase 9).
+- Works offline (service worker) and is installable as a PWA.
 - Consistent UI: Tailwind CSS + shadcn/ui.
 - Accessible: keyboard drag and drop, focus management in dialogs, visible focus states.
 - Safe Markdown rendering: no raw HTML, no script URLs.

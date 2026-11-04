@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { importTimeline, replaceTimeline } from '@/db'
 import type { Timeline } from '@/types/models'
@@ -61,6 +62,7 @@ export function useTimelineImport(
       target.mode === 'new'
         ? await importTimeline(file)
         : await replaceTimeline(target.timelineId, file)
+    toast.success(target.mode === 'new' ? 'Timeline imported' : 'Timeline replaced')
     await onImported?.(timeline)
   }
 

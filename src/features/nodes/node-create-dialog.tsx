@@ -1,4 +1,5 @@
 import { useOutletContext } from 'react-router'
+import { toast } from 'sonner'
 import { RouteDialog } from '@/components/common/route-dialog'
 import { createNode } from '@/db'
 import { useCloseRoute } from '@/hooks/use-close-route'
@@ -15,7 +16,10 @@ export function NodeCreateDialog() {
       <NodeForm
         submitLabel="Create"
         onSubmit={(values) => createNode(timeline.id, values)}
-        onSaved={close}
+        onSaved={() => {
+          toast.success('Node created')
+          close()
+        }}
         onCancel={close}
       />
     </RouteDialog>

@@ -37,4 +37,5 @@ Personal, offline-first web app for building event timelines. React SPA, all dat
 - `npm run format` / `npm run format:check`: Prettier write / check.
 - `npm test`: Vitest (single run); `npm run test:watch` for watch mode.
 - `npm run e2e`: Playwright (`mobile` and `desktop` projects; starts the dev server on port 4173).
+- `npm run generate-pwa-assets`: regenerate PWA icons, `favicon.ico` and the Apple touch icon from `public/favicon.svg`.
 - Add shadcn/ui components: `npx shadcn@latest add <name>`.

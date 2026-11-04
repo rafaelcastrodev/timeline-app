@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useReturnFocus } from '@/hooks/use-return-focus'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -40,6 +41,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const returnFocus = useReturnFocus()
 
   const handleOpenChange = (next: boolean) => {
     if (pending) return
@@ -65,7 +67,7 @@ export function ConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent {...returnFocus}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

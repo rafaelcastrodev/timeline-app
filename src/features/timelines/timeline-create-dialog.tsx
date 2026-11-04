@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 import { RouteDialog } from '@/components/common/route-dialog'
 import { createTimeline } from '@/db'
 import { useCloseRoute } from '@/hooks/use-close-route'
@@ -13,7 +14,10 @@ export function TimelineCreateDialog() {
       <TimelineForm
         submitLabel="Create"
         onSubmit={createTimeline}
-        onSaved={(timeline) => void navigate(`/timelines/${timeline.id}`, { replace: true })}
+        onSaved={(timeline) => {
+          toast.success('Timeline created')
+          void navigate(`/timelines/${timeline.id}`, { replace: true })
+        }}
         onCancel={close}
       />
     </RouteDialog>

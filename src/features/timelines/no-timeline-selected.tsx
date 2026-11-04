@@ -11,7 +11,7 @@ export function NoTimelineSelected() {
     <>
       {total !== undefined && (
         <EmptyState
-          className="h-full justify-center"
+          className="hidden h-full justify-center lg:flex"
           icon={MousePointerClickIcon}
           title={total === 0 ? 'Nothing here yet' : 'No timeline selected'}
           description={

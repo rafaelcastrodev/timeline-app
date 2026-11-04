@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Active phase: **7. Import / Export** (done). Phase 6 manual check on a real touch device still pending.
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence), phase 7 (JSON export download, import parser with size limit and readable errors, preview dialog, "import as new" from the dashboard and "replace from file" from the timeline menu, transactional writes). 116 unit/integration tests; E2E dashboard, timeline view, node, reorder and transfer flows pass on mobile and desktop (touch long press emulated via CDP on mobile).
-- Next step: manual reorder check on a real touch device (long press on the grip drags; swiping elsewhere and on the grip scrolls), then phase 8, first item.
+- Active phase: **8. Polish** (done). Phase 6 manual check on a real touch device still pending.
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence), phase 7 (JSON export download, import parser with size limit and readable errors, preview dialog, "import as new" from the dashboard and "replace from file" from the timeline menu, transactional writes), phase 8 (accessibility pass: landmarks, headings, contrast tokens, focus return after dialogs and navigation; dark mode; toasts; PWA with offline precache; README). 118 unit/integration tests; E2E dashboard, timeline view, node, reorder, transfer, focus, theme/toast and axe accessibility specs pass on mobile and desktop (touch long press emulated via CDP on mobile). Lighthouse accessibility (mobile, production build): 100 on the dashboard and on a timeline with nodes.
+- Next step: manual checks on a real touch device: reorder (long press on the grip drags; swiping elsewhere and on the grip scrolls) and PWA install / offline launch. All planned phases are done after that.
 
 ## Phases
 
@@ -80,10 +80,10 @@ Done when: E2E: reorder by mouse and by keyboard, reload, order kept. Manual che
 Done when: round trip (export → import as new) produces equivalent data with node `created_at` preserved; replace keeps the target id; invalid files write nothing and show an error.
 
 ### 8. Polish
-- [ ] Accessibility pass (focus order, labels, focus return after dialogs).
-- [ ] Dark mode (shadcn/ui theme).
-- [ ] Toasts for save/delete/import/export outcomes.
-- [ ] Optional: PWA (installable, offline cache).
-- [ ] README with usage and backup advice.
+- [x] Accessibility pass (focus order, labels, focus return after dialogs).
+- [x] Dark mode (shadcn/ui theme).
+- [x] Toasts for save/delete/import/export outcomes.
+- [x] Optional: PWA (installable, offline cache).
+- [x] README with usage and backup advice.
 
 Done when: Lighthouse accessibility ≥ 90 on mobile.

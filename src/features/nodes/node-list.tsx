@@ -48,7 +48,7 @@ const screenReaderInstructions: ScreenReaderInstructions = {
  * with snap points (snapping is off while dragging so auto-scroll is not pulled back).
  */
 export function NodeList({ timelineId, nodes, orientation }: NodeListProps) {
-  const { orderedNodes, ids, move, failed } = useNodeOrder(timelineId, nodes)
+  const { orderedNodes, ids, move } = useNodeOrder(timelineId, nodes)
   const [dragging, setDragging] = useState(false)
   const lastOver = useRef<UniqueIdentifier | null>(null)
   const position = (id: UniqueIdentifier) => `${ids.indexOf(String(id)) + 1} of ${ids.length}`
@@ -101,11 +101,6 @@ export function NodeList({ timelineId, nodes, orientation }: NodeListProps) {
         items={ids}
         strategy={horizontal ? horizontalListSortingStrategy : verticalListSortingStrategy}
       >
-        {failed && (
-          <p role="alert" className="px-4 pt-4 text-sm text-destructive lg:px-6">
-            Could not save the new order. Try again.
-          </p>
-        )}
         {horizontal ? (
           <div
             data-slot="node-scroller"

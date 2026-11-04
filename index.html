@@ -2,9 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="description" content="Personal, offline-first app for building event timelines." />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Timeline</title>
+    <meta name="color-scheme" content="light dark" />
+    <title>Timeline App</title>
+    <script>
+      // Applies the stored theme (next-themes, key "theme") before the app loads, so a dark theme
+      // does not flash light.
+      try {
+        const theme = localStorage.getItem('theme') || 'system'
+        const dark =
+          theme === 'dark' ||
+          (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.add(dark ? 'dark' : 'light')
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+      } catch {
+        // Storage unavailable: the app applies the system theme once it loads.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

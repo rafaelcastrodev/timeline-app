@@ -2,11 +2,13 @@ import { FileUpIcon, ListIcon, PlusIcon } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { EmptyState } from '@/components/common/empty-state'
 import { LoadMoreSentinel } from '@/components/common/load-more-sentinel'
+import { ThemeMenu } from '@/components/common/theme-menu'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTimelineCount, useTimelines } from '@/db'
 import { useTimelineImport } from '@/features/transfer/use-timeline-import'
 import { useInfiniteLimit } from '@/hooks/use-infinite-limit'
+import { pageHeadingProps } from '@/lib/focus'
 import { TimelineListItem } from './timeline-list-item'
 
 export const TIMELINE_PAGE_SIZE = 20
@@ -30,7 +32,10 @@ export function TimelineListPane() {
   return (
     <div className="flex flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background px-4 py-3">
-        <h1 className="flex-1 text-lg font-semibold">Timelines</h1>
+        <h2 {...pageHeadingProps} className="flex-1 text-lg font-semibold outline-none">
+          Timelines
+        </h2>
+        <ThemeMenu />
         <Button
           variant="outline"
           size="icon-sm"

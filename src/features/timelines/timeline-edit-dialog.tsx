@@ -1,4 +1,5 @@
 import { useOutletContext } from 'react-router'
+import { toast } from 'sonner'
 import { RouteDialog } from '@/components/common/route-dialog'
 import { updateTimeline } from '@/db'
 import { useCloseRoute } from '@/hooks/use-close-route'
@@ -21,7 +22,10 @@ export function TimelineEditDialog() {
         }}
         submitLabel="Save"
         onSubmit={(values) => updateTimeline(timeline.id, values)}
-        onSaved={close}
+        onSaved={() => {
+          toast.success('Timeline saved')
+          close()
+        }}
         onCancel={close}
       />
     </RouteDialog>
