@@ -154,3 +154,7 @@ Rationale: "Deploy from a branch" publishes the repository as is, so the browser
 ## D-040 — Node form field order: title, card color, layer, description (2026-11-16)
 `NodeForm` shows its fields as title, card color, layer, description, in both the create and the edit dialogs.
 Rationale: requested by the user; the short fields sit together at the top and the description, the longest field, comes last. One shared form keeps create and edit consistent.
+
+## D-041 — Node severity (2026-11-16)
+Nodes have a `severity` field, an integer from 1 to 5 (default 1), chosen with a Select labeled "Severity" placed next to the "Layer" select in a two-column row of `NodeForm`. It is stored and exported only; the timeline view does not use it. Dexie schema v4 sets `severity: 1` on existing nodes; the export format stays at `schema_version` 1 with `severity` as an optional node field defaulting to `1`.
+Rationale: requested by the user as a field similar to `layer`, with the same range and control. No visual effect was requested, so none is defined. The two short selects share one row to keep the form compact. The field is additive and optional in the file for the same reasons as `color` (D-032).

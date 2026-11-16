@@ -30,6 +30,7 @@ async function seed(page: Page): Promise<string> {
       description: `${title} notes`,
       color: null,
       layer,
+      severity: 1,
       position,
       created_at: AT,
       updated_at: AT,
@@ -71,7 +72,7 @@ test('layer focus dims the other layers and switches between the layers in use',
   await expect(page.getByRole('button', { name: 'Focused layer 1' })).toBeVisible()
 })
 
-test('the node form saves the layer chosen in the select', async ({ page }) => {
+test('the node form saves the layer and severity chosen in the selects', async ({ page }) => {
   const timelineId = await seed(page)
   await page.goto(`/timelines/${timelineId}/nodes/new`)
 
@@ -80,10 +81,13 @@ test('the node form saves the layer chosen in the select', async ({ page }) => {
   await dialog.getByRole('combobox', { name: 'Layer' }).click()
   await page.getByRole('option', { name: '2' }).click()
   await expect(dialog.getByRole('combobox', { name: 'Layer' })).toHaveText('2')
+  await dialog.getByRole('combobox', { name: 'Severity' }).click()
+  await page.getByRole('option', { name: '5' }).click()
+  await expect(dialog.getByRole('combobox', { name: 'Severity' })).toHaveText('5')
   await dialog.getByRole('button', { name: 'Create' }).click()
   await expect(dialog).toBeHidden()
 
   await expect.poll(() => opacity(item(page, 'Echo'))).toBe(0.4)
   const { nodes } = await readRecords(page)
-  expect(nodes.find((node) => node.title === 'Echo')).toMatchObject({ layer: 2 })
+  expect(nodes.find((node) => node.title === 'Echo')).toMatchObject({ layer: 2, severity: 5 })
 })

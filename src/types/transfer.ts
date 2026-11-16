@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import {
   DEFAULT_NODE_LAYER,
+  DEFAULT_NODE_SEVERITY,
   isoDateTimeSchema,
   nodeColorSchema,
   nodeLayerSchema,
+  nodeSeveritySchema,
   orientationSchema,
   titleSchema,
 } from './models'
@@ -23,8 +25,8 @@ const fileTimelineSchema = z.object({
 
 /**
  * Node in an export file. Import uses the array order, not `position`, for the new order.
- * `color` and `layer` are optional (files exported before those fields have none) and default to
- * `null` and `1`.
+ * `color`, `layer` and `severity` are optional (files exported before those fields have none) and
+ * default to `null`, `1` and `1`.
  */
 const fileNodeSchema = z.object({
   id: z.uuid(),
@@ -32,6 +34,7 @@ const fileNodeSchema = z.object({
   description: z.string(),
   color: nodeColorSchema.nullable().default(null),
   layer: nodeLayerSchema.default(DEFAULT_NODE_LAYER),
+  severity: nodeSeveritySchema.default(DEFAULT_NODE_SEVERITY),
   position: z.int().nonnegative(),
   created_at: isoDateTimeSchema,
   updated_at: isoDateTimeSchema,

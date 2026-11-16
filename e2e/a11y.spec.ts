@@ -35,6 +35,7 @@ async function seed(page: Page): Promise<string> {
       // Colored and default cards; red and indigo are the lowest-contrast soft shades.
       color: (['red', 'indigo', null] as const)[position],
       layer: 1,
+      severity: 1,
       position,
       created_at: AT,
       updated_at: AT,

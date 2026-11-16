@@ -33,6 +33,7 @@ async function seedTimeline(page: Page): Promise<string> {
       ).join('\n\n'),
       color: null,
       layer: 1,
+      severity: 1,
       position,
       created_at: AT,
       updated_at: AT,

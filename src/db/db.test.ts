@@ -9,7 +9,7 @@ afterEach(async () => {
 })
 
 describe('database migrations', () => {
-  it('v2 and v3 give existing nodes the default color and layer', async () => {
+  it('v2 to v4 give existing nodes the default color, layer and severity', async () => {
     const v1 = new Dexie(NAME)
     v1.version(1).stores({
       timelines: 'id, updated_at',
@@ -43,9 +43,10 @@ describe('database migrations', () => {
         title: 'Node',
         color: null,
         layer: 1,
+        severity: 1,
         updated_at: at,
       })
-      expect(db.verno).toBe(3)
+      expect(db.verno).toBe(4)
     } finally {
       db.close()
     }
@@ -73,6 +74,34 @@ describe('database migrations', () => {
     const db = new TimelineDatabase(NAME)
     try {
       expect(await db.nodes.get(nodeId)).toMatchObject({ color: 'teal', layer: 1 })
+    } finally {
+      db.close()
+    }
+  })
+
+  it('v4 keeps the layer of v3 nodes and gives them severity 1', async () => {
+    const v3 = new Dexie(NAME)
+    v3.version(3).stores({
+      timelines: 'id, updated_at',
+      nodes: 'id, timeline_id, [timeline_id+position]',
+    })
+    const nodeId = crypto.randomUUID()
+    await v3.table('nodes').add({
+      id: nodeId,
+      timeline_id: crypto.randomUUID(),
+      title: 'Layered',
+      description: '',
+      color: 'teal',
+      layer: 4,
+      position: 0,
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    })
+    v3.close()
+
+    const db = new TimelineDatabase(NAME)
+    try {
+      expect(await db.nodes.get(nodeId)).toMatchObject({ color: 'teal', layer: 4, severity: 1 })
     } finally {
       db.close()
     }

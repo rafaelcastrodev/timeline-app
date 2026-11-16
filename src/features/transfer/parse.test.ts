@@ -61,6 +61,25 @@ describe('parseTimelineFile', () => {
     expect((await rejection(jsonFile(broken))).message).toContain('nodes[0].layer: ')
   })
 
+  it('accepts nodes without a severity (older exports) as severity 1', async () => {
+    const file = makeTimelineFile(2)
+    file.nodes[1]!.severity = 4
+    const legacy = {
+      ...file,
+      nodes: file.nodes.map(({ severity, ...node }, index) =>
+        index === 0 ? node : { ...node, severity },
+      ),
+    }
+    const parsed = await parseTimelineFile(jsonFile(legacy))
+    expect(parsed.nodes.map((node) => node.severity)).toEqual([1, 4])
+  })
+
+  it.each([0, 6, 1.5, '2'])('rejects node severity %j', async (severity) => {
+    const file = makeTimelineFile(1)
+    const broken = { ...file, nodes: [{ ...file.nodes[0], severity }] }
+    expect((await rejection(jsonFile(broken))).message).toContain('nodes[0].severity: ')
+  })
+
   it('trims titles', async () => {
     const file = makeTimelineFile(1)
     file.timeline.title = '  Padded  '

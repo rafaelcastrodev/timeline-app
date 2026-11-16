@@ -74,6 +74,7 @@ export function NodeDetailDialog() {
             description: node.description,
             color: node.color,
             layer: node.layer,
+            severity: node.severity,
           }}
           submitLabel="Save"
           autoFocusTitle

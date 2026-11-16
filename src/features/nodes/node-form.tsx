@@ -23,7 +23,9 @@ import {
 } from '@/components/ui/select'
 import {
   DEFAULT_NODE_LAYER,
+  DEFAULT_NODE_SEVERITY,
   NODE_LAYERS,
+  NODE_SEVERITIES,
   nodeFormSchema,
   type NodeFormInput,
   type NodeColor,
@@ -37,6 +39,7 @@ const emptyValues: NodeFormInput = {
   description: '',
   color: null,
   layer: DEFAULT_NODE_LAYER,
+  severity: DEFAULT_NODE_SEVERITY,
 }
 
 interface NodeFormProps {
@@ -119,39 +122,72 @@ export function NodeForm({
             )}
           />
 
-          <Controller
-            control={form.control}
-            name="layer"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel htmlFor={`${id}-layer`}>Layer</FieldLabel>
-                <Select
-                  name={field.name}
-                  value={String(field.value)}
-                  onValueChange={(value) => field.onChange(Number(value))}
-                >
-                  <SelectTrigger
-                    id={`${id}-layer`}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    className="w-24"
+          <div className="grid grid-cols-2 items-start gap-4">
+            <Controller
+              control={form.control}
+              name="layer"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor={`${id}-layer`}>Layer</FieldLabel>
+                  <Select
+                    name={field.name}
+                    value={String(field.value)}
+                    onValueChange={(value) => field.onChange(Number(value))}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NODE_LAYERS.map((layer) => (
-                      <SelectItem key={layer} value={String(layer)}>
-                        {layer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldDescription>
-                  The timeline can focus one layer and dim the others.
-                </FieldDescription>
-              </Field>
-            )}
-          />
+                    <SelectTrigger
+                      id={`${id}-layer`}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      className="w-24"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NODE_LAYERS.map((layer) => (
+                        <SelectItem key={layer} value={String(layer)}>
+                          {layer}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    The timeline can focus one layer and dim the others.
+                  </FieldDescription>
+                </Field>
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name="severity"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor={`${id}-severity`}>Severity</FieldLabel>
+                  <Select
+                    name={field.name}
+                    value={String(field.value)}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
+                    <SelectTrigger
+                      id={`${id}-severity`}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      className="w-24"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NODE_SEVERITIES.map((severity) => (
+                        <SelectItem key={severity} value={String(severity)}>
+                          {severity}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          </div>
 
           <Controller
             control={form.control}

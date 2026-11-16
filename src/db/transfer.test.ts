@@ -48,6 +48,7 @@ describe('transfer repository', () => {
       description: '**1**',
       color: 'violet',
       layer: 4,
+      severity: 2,
     })
     advance()
     await createNode(source.id, { title: 'Two' })
@@ -71,18 +72,22 @@ describe('transfer repository', () => {
     const sourceNodes = await listNodes(source.id)
     const importedNodes = await listNodes(imported.id)
     const content = (nodes: typeof sourceNodes) =>
-      nodes.map(({ title, description, color, layer, position, created_at, updated_at }) => ({
-        title,
-        description,
-        color,
-        layer,
-        position,
-        created_at,
-        updated_at,
-      }))
+      nodes.map(
+        ({ title, description, color, layer, severity, position, created_at, updated_at }) => ({
+          title,
+          description,
+          color,
+          layer,
+          severity,
+          position,
+          created_at,
+          updated_at,
+        }),
+      )
     expect(content(importedNodes)).toEqual(content(sourceNodes))
     expect(importedNodes.map((node) => node.color)).toEqual(['violet', null])
     expect(importedNodes.map((node) => node.layer)).toEqual([4, 1])
+    expect(importedNodes.map((node) => node.severity)).toEqual([2, 1])
     expect(importedNodes.every((node) => node.timeline_id === imported.id)).toBe(true)
     const sourceIds = new Set(sourceNodes.map((node) => node.id))
     expect(importedNodes.some((node) => sourceIds.has(node.id))).toBe(false)
@@ -139,6 +144,7 @@ describe('transfer repository', () => {
         description: 'Description 1',
         color: null,
         layer: 1,
+        severity: 1,
         position: 0,
         created_at: file.nodes[0]!.created_at,
         updated_at: file.nodes[0]!.updated_at,
