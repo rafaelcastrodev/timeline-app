@@ -48,20 +48,43 @@ export function focusPageHeadingWhenReady(timeoutMs = 2000): () => void {
   return stop
 }
 
+/** A focusable element: HTML, or SVG (e.g. the points of the severity chart). */
+export type FocusableElement = HTMLElement | SVGElement
+
 /**
  * The element focus should return to when an overlay opened now closes: the focused element, or,
  * for an item of a dropdown menu (which closes with the menu), the menu's trigger.
  */
-export function focusOrigin(): HTMLElement | null {
+export function focusOrigin(): FocusableElement | null {
   const active = document.activeElement
-  if (!(active instanceof HTMLElement) || active === document.body) return null
+  if (!(active instanceof HTMLElement || active instanceof SVGElement) || active === document.body)
+    return null
   const triggerId = active.closest('[role="menu"]')?.getAttribute('aria-labelledby')
   return (triggerId && document.getElementById(triggerId)) || active
 }
 
-/** Focuses `target` if it is still visible, else the page heading. */
-export function restoreFocus(target: HTMLElement | null): void {
-  if (target && isVisible(target)) target.focus()
+/**
+ * Identifies a focusable element across remounts. Set it on elements a library may recreate while
+ * a dialog is open (chart points), so focus returns to the element that replaced the opener.
+ */
+export const focusIdAttribute = 'data-focus-id'
+
+function currentElement(target: FocusableElement): FocusableElement | null {
+  if (target.isConnected) return target
+  const focusId = target.getAttribute(focusIdAttribute)
+  if (!focusId) return null
+  return document.querySelector<HTMLElement | SVGElement>(
+    `[${focusIdAttribute}="${CSS.escape(focusId)}"]`,
+  )
+}
+
+/**
+ * Focuses `target` (or the element with the same focus id that replaced it) if it is still
+ * visible, else the page heading.
+ */
+export function restoreFocus(target: FocusableElement | null): void {
+  const element = target && currentElement(target)
+  if (element && isVisible(element)) element.focus()
   else focusPageHeading()
 }
 

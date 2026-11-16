@@ -1,5 +1,6 @@
 import {
   ArrowLeftIcon,
+  ChartSplineIcon,
   FileDownIcon,
   FileUpIcon,
   ListPlusIcon,
@@ -119,6 +120,11 @@ function TimelineDetail({ timeline }: { timeline: Timeline }) {
         {focusedLayer !== undefined && layers.length > 1 && (
           <LayerFocusButton layers={layers} value={focusedLayer} onChange={setFocusedLayer} />
         )}
+        <Button asChild variant="outline" size="icon">
+          <Link to="chart" aria-label="Severity chart" title="Severity chart">
+            <ChartSplineIcon aria-hidden="true" />
+          </Link>
+        </Button>
         <OrientationToggle
           value={timeline.orientation}
           onChange={(orientation) => {

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react'
-import { focusOrigin, restoreFocus } from '@/lib/focus'
+import { focusOrigin, restoreFocus, type FocusableElement } from '@/lib/focus'
 
 /**
  * Focus return for dialogs without a Radix `Trigger` (route dialogs, confirmations), where Radix
@@ -8,7 +8,7 @@ import { focusOrigin, restoreFocus } from '@/lib/focus'
  * element is gone or hidden (deleted card, list pane hidden on small screens).
  */
 export function useReturnFocus() {
-  const origin = useRef<HTMLElement | null>(null)
+  const origin = useRef<FocusableElement | null>(null)
 
   // Runs before Radix moves focus into the dialog, so the opener is still focused.
   const onOpenAutoFocus = useCallback(() => {

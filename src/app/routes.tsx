@@ -30,6 +30,15 @@ export const routes: RouteObject[] = [
           { path: 'nodes/:nodeId', element: <NodeDetailDialog /> },
         ],
       },
+      {
+        path: 'timelines/:timelineId/chart',
+        // Loaded on demand: keeps the chart library out of the initial bundle (still precached).
+        lazy: async () => {
+          const { TimelineChartView } = await import('@/features/chart/timeline-chart-view')
+          return { Component: TimelineChartView }
+        },
+        children: [{ path: 'nodes/:nodeId', element: <NodeDetailDialog /> }],
+      },
     ],
   },
   { path: '*', element: <NotFound /> },

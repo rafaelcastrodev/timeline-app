@@ -2,13 +2,13 @@
 
 ## Current status
 
-- Active phase: **11. Severity** (done). Phase 6 manual check on a real touch device still pending.
-- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence), phase 7 (JSON export download, import parser with size limit and readable errors, preview dialog, "import as new" from the dashboard and "replace from file" from the timeline menu, transactional writes), phase 8 (accessibility pass: landmarks, headings, contrast tokens, focus return after dialogs and navigation; dark mode; toasts; PWA with offline precache; README), phase 9 (node card colors: `color` field with Dexie v2 migration, swatch picker in the node form, soft card backgrounds, color in the export file), phase 10 (node `layer` field with Dexie v3 migration, layer select in the node form, layer focus button that dims the other layers, layer in the export file), phase 11 (node `severity` field with Dexie v4 migration, severity select next to the layer select, severity in the export file). 153 unit/integration tests; E2E dashboard, timeline view, node, reorder, transfer, focus, layers, theme/toast and axe accessibility specs pass on mobile and desktop (touch long press emulated via CDP on mobile). Lighthouse accessibility (mobile, production build): 100 on the dashboard and on a timeline with nodes.
-- Next step: manual checks on a real touch device: reorder (long press on the grip drags; swiping elsewhere and on the grip scrolls) and PWA install / offline launch. All planned phases are done after that.
+- Active phase: none; phases 0–12 done. Phase 6 manual check on a real touch device still pending.
+- Done so far: phase 0 (setup), phase 1 (data layer: Dexie schema v1, zod models, repositories, live-query hooks), phase 2 (Markdown components), phase 3 (router and master-detail layout, timeline list with infinite scroll, timeline create/edit route dialogs, delete with confirmation), phase 4 (timeline view: orientation toggle persisted per timeline, vertical and horizontal layouts, node cards, empty state, "+ Node" action), phase 5 (node create route, node detail with edit in place, delete with confirmation, clickable node cards, unsaved-changes guard on node and timeline forms), phase 6 code (sortable node list in both orientations from the card's drag handle, mouse/touch/keyboard sensors, optimistic reorder with transactional persistence), phase 7 (JSON export download, import parser with size limit and readable errors, preview dialog, "import as new" from the dashboard and "replace from file" from the timeline menu, transactional writes), phase 8 (accessibility pass: landmarks, headings, contrast tokens, focus return after dialogs and navigation; dark mode; toasts; PWA with offline precache; README), phase 9 (node card colors: `color` field with Dexie v2 migration, swatch picker in the node form, soft card backgrounds, color in the export file), phase 10 (node `layer` field with Dexie v3 migration, layer select in the node form, layer focus button that dims the other layers, layer in the export file), phase 11 (node `severity` field with Dexie v4 migration, severity select next to the layer select, severity in the export file), phase 12 (severity chart page with shadcn/ui chart + Recharts: monotone curve, title tooltip, points that open the node detail by click or Enter, focus returns to the point). 158 unit/integration tests pass; E2E dashboard, timeline view, node, reorder, transfer, focus, layers, chart, theme/toast and axe accessibility specs pass on mobile and desktop (49 passed, 3 skipped by viewport; touch long press emulated via CDP on mobile). Lighthouse accessibility (mobile, production build): 100 on the dashboard and on a timeline with nodes.
+- Next step: manual checks on a real touch device: reorder (long press on the grip drags; swiping elsewhere and on the grip scrolls), tapping chart points, and PWA install / offline launch.
 
 ## Phases
 
-Phases 1–5 form the usable core. Phases 6–11 are independent of each other.
+Phases 1–5 form the usable core. Phases 6–11 are independent of each other; phase 12 builds on phase 11.
 
 ### 0. Setup
 - [x] Scaffold Vite + React + TypeScript (strict) in this folder.
@@ -109,3 +109,13 @@ Done when: the layer is saved on create and edit, kept by export/import, older d
 - [x] Severity select next to the layer select in the node form.
 
 Done when: the severity is saved on create and edit, kept by export/import, and older data and files read as severity 1.
+
+### 12. Severity chart
+- [x] shadcn/ui `chart` component + Recharts.
+- [x] Chart page route (`timelines/:timelineId/chart`) with the node detail as child route.
+- [x] Chart link next to the layer focus button in the timeline header.
+- [x] Monotone line of severity by timeline order, title tooltip, points open the node detail (click and Enter).
+- [x] Focus returns to the point after the node detail closes.
+- [x] Run unit, E2E and accessibility suites.
+
+Done when: the chart shows one point per node at its severity, hovering shows the title, clicking or Enter opens the node detail and closing it returns to the chart with focus on the point, and axe passes on the chart in both themes and viewports.

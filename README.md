@@ -6,6 +6,7 @@ Personal, offline-first web app for building event timelines. Everything stays i
 
 - **Timelines.** Create one with **New timeline**. The list shows the most recently changed first; select one to open it. On a phone, the list and the timeline are separate screens.
 - **Nodes.** Add events with **+ Node** (the round button at the bottom right on a phone). Click a card to read it; **Edit** in the detail switches to the form. Pick a **card color** in the form to tint the card on the timeline, a **layer** (1 to 5, default 1) to group story threads, and a **severity** (1 to 5, default 1). Once a timeline uses more than one layer, the layer button in its header switches the focused layer: nodes of the other layers are dimmed.
+- **Severity chart.** The chart button next to the layer button opens a page that plots every node as a point on a curve, in timeline order: the higher the severity, the higher the point. Hover a point to see the node title; click it (or press Enter) to open the node.
 - **Order.** Drag a card by its grip handle. On a touch screen, press and hold the grip briefly, then drag. With a keyboard, focus the grip, press Space or Enter, move with the arrow keys, and press Space or Enter again to drop (Escape cancels).
 - **Orientation.** The toggle in the timeline header switches between vertical and horizontal. It is saved per timeline.
 - **Markdown.** Titles and descriptions accept Markdown. Titles support bold, italic, strikethrough, code and links; descriptions also support lists, tables, task lists and headings. Raw HTML is shown as text.

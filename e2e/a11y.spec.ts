@@ -131,6 +131,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByText('Title is required')).toBeVisible()
       await expectNoViolations(page, 'node form with error', { overlay: true })
 
+      await page.goto(`/timelines/${timelineId}/chart`)
+      await expect(page.getByRole('link', { name: /Severity 1/ })).toHaveCount(3)
+      await page
+        .getByRole('link', { name: /Severity 1/ })
+        .first()
+        .hover()
+      await expectNoViolations(page, 'severity chart with tooltip')
+
       await page.goto(`/timelines/${timelineId}`)
       await page.getByRole('button', { name: 'Timeline actions' }).click()
       await page.getByRole('menuitem', { name: 'Delete' }).click()

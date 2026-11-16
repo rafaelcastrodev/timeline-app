@@ -7,9 +7,10 @@
 | Build | Vite + React + TypeScript (strict) | TypeScript pinned to 6.0.x until typescript-eslint supports 7 (D-010) |
 | Styling | Tailwind CSS v4 | |
 | Theme | `next-themes` | Light, dark or system; `dark` class on `<html>` (D-029) |
-| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Select, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea |
+| Components | shadcn/ui (Radix base, Nova preset, Lucide icons) | Dialog, Drawer/Sheet, AlertDialog, Button, Card, Input, Textarea, Select, Tabs, Toggle Group, Dropdown Menu, Sonner (toasts), Skeleton, ScrollArea, Chart |
 | Persistence | Dexie.js + `dexie-react-hooks` (`useLiveQuery`) | Reactive queries; schema versioning for migrations |
 | Drag and drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` | Mouse, touch and keyboard sensors (D-023) |
+| Charts | shadcn/ui `chart` (`src/components/ui/chart.tsx`) + Recharts 3 | Severity chart (D-042) |
 | Routing | React Router 8, data router (`createBrowserRouter`) | Required for `useBlocker`. `RouterProvider` comes from `react-router/dom`, everything else from `react-router` |
 | Forms | react-hook-form + `@hookform/resolvers` (zod) | zod schemas are shared with import validation. Fields use shadcn/ui `Field` |
 | Markdown | `react-markdown` + `remark-gfm` | No `rehype-raw`: raw HTML is never rendered |
@@ -36,6 +37,7 @@ src/
     timelines/      dashboard list, timeline form, timeline view
     nodes/          node card, node detail, node form, sortable logic
     transfer/       import/export (parser, export download, import flow UI)
+    chart/          severity chart page
   hooks/            useInfiniteLimit, useCloseRoute, useUnsavedChangesGuard, useReturnFocus
   lib/              dates, focus, slug, storage, utils
   types/            zod schemas: records and forms (models.ts), export file (transfer.ts)
@@ -123,13 +125,15 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 /timelines/:timelineId/edit        edit timeline metadata (form)
 /timelines/:timelineId/nodes/new   create node (form)
 /timelines/:timelineId/nodes/:nodeId   node detail (read mode, "Edit" switches to the form in place)
+/timelines/:timelineId/chart       severity chart page
+/timelines/:timelineId/chart/nodes/:nodeId   node detail over the chart
 ```
 
-- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router inside `AppProviders` (`src/app/providers.tsx`: theme provider and toaster). `AppLayout` (`src/app/app-layout.tsx`) renders a visually hidden `<h1>` ("Timeline App"), the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
+- Route tree: `src/app/routes.tsx`; `App.tsx` creates the browser router inside `AppProviders` (`src/app/providers.tsx`: theme provider and toaster). `AppLayout` (`src/app/app-layout.tsx`) renders a visually hidden `<h1>` ("Timeline App"), the list pane (`<aside>`) and the detail pane (`<main>`, the outlet). A pathless child route renders the "no timeline selected" empty state with `timelines/new` nested under it; `timelines/:timelineId` renders the timeline view, which passes the loaded timeline to its child routes (`edit`, `nodes/new`, `nodes/:nodeId`) as outlet context. The sibling route `timelines/:timelineId/chart` renders the severity chart page, which passes the timeline the same way to its child `nodes/:nodeId`; it is a `lazy` route, so Recharts loads on demand in its own chunk (still precached by the service worker). Unknown URLs render a top-level `NotFound`; render errors go to `RouteError`.
 - Mobile (< `lg`): each route is a full screen; the list and the timeline are separate screens with a back action. The layout hides the list while a `:timelineId` param is matched (CSS `hidden` + `lg:` overrides, no media-query hook). `<main>` is always rendered so the page keeps its main landmark; without a selection it holds only the desktop empty state (hidden below `lg`) and portaled dialogs.
 - Desktop (≥ `lg`): two panes, each scrolling on its own. The list stays visible on the left; the selected timeline renders on the right. With no selection, the right pane shows an empty state.
 - Forms and node detail are route dialogs (`RouteDialog`): a shadcn/ui Dialog that is open while its route is mounted, full screen below `lg` and a centered modal from `lg` up (D-016). Its title is a `ReactNode`, so node titles render as inline Markdown. The title (and optional description) and the close button sit in a header bar that is `sticky` at the top of the dialog while the content scrolls; `headerClassName` styles it (D-036).
-- Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). Creating a timeline replaces `/timelines/new` with the new timeline's route.
+- Closing a route dialog (X, Esc, overlay, Cancel, after save) goes back in history when it was opened inside the app, and replaces it with the parent route when it was opened by direct URL (`useCloseRoute`, D-017). The node detail's fallback is the relative route `..`, so it closes to the timeline view or to the chart page, whichever it is nested in. Creating a timeline replaces `/timelines/new` with the new timeline's route.
 - Detail views are routes (not only component state), so the browser back button closes them and the unsaved-changes guard can intercept it.
 
 ## Dashboard (master-detail, infinite scroll)
@@ -144,7 +148,7 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 
 ## Timeline view
 
-- Header: back action (mobile), title (`h2`), layer focus button (only while the nodes use more than one layer), orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
+- Header: back action (mobile), title (`h2`), layer focus button (only while the nodes use more than one layer), severity chart link (outline icon button, Lucide `ChartSpline`, `aria-label` "Severity chart", always shown), orientation toggle, "+ Node" action, actions menu (Edit, Export, Replace from file, Delete).
 - Layer focus (D-037): `LayerFocusButton` (outline button, Lucide `Layers` icon + the focused layer number, `aria-label` "Focused layer N", tooltip "Switch to layer M") moves the focus to the next layer in use, ascending, wrapping around. The focus is component state of the timeline view (`useLayerFocus`), not persisted: it starts at the lowest layer in use, falls back to it when no node uses the focused layer anymore, and starts over when another timeline is selected. In `NodeList`, each `<li>` (card and marker) of another layer gets `data-dimmed` and `opacity-40`; it returns to full opacity while hovered, while it contains focus and while dragged. Dimmed cards are below WCAG AA text contrast by design (light excerpt 1.67:1, dark 2.41:1), so the axe spec scans a timeline with a single layer.
 - Orientation toggle: icon-only single-select Toggle Group (`OrientationToggle`, radio semantics, labels "Vertical"/"Horizontal"). Selecting the active item again keeps it. A change is saved immediately with `updateTimeline`, which bumps `updated_at` like any timeline write (D-019); the view re-renders from the live query. A failed write shows an error toast.
 - "+ Node": one link to `nodes/new`, a floating action button (bottom-right, icon only) below `lg` and a regular header button from `lg` up. The node area has bottom padding below `lg` so the last card stays clear of it.
@@ -153,6 +157,17 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 - Vertical: an ordered list with a vertical line on the left and a marker per card; cards stacked, max width `2xl`.
 - Horizontal: the list sits in its own horizontal scroll container (`snap-x snap-mandatory`, cards `snap-start`) under a horizontal line with a marker per card; cards have a fixed width (`w-64`, `md:w-72`). The page itself never scrolls horizontally.
 - Node card (`NodeCard`, shadcn/ui `Card`): inline title (`h3`) + description excerpt clamped to 3 lines + grip icon. A node color sets the card background from the picker's `500` shade (D-034). Each color sets two CSS variables on the card (`--node-color`: the hue's `500`; `--node-tint`: its `300`), and shared classes use them. Light: `--node-tint`, hover mixes in 20% of `--node-color`. Dark: `--node-color` mixed into `--card` at 35%, 40% on hover (`color-mix` in oklab, opaque). The default card keeps `bg-card`. Colored cards override `--muted-foreground` (`oklch(0.35 0 0)` light, `oklch(0.85 0 0)` dark) so the excerpt stays at 4.5:1 or more on every color, hover included. The node's marker on the timeline line (`NodeMarker`) takes the same fill as the card with a `--node-color` outline; uncolored nodes keep the `primary` outline on `bg-background`. Classes live in `node-colors.ts` as complete literals per color, so Tailwind's scanner generates them and emits the theme variables they reference. The title is a link to the node detail whose `::after` overlay covers the whole card (stretched link, D-022); Markdown links in the title and excerpt render as text. The grip is the drag handle: a ghost icon Button stacked above the link overlay, named "Reorder" + the rendered title (`aria-labelledby`).
+
+## Severity chart
+
+Components live in `src/features/chart` (D-042).
+
+- Page (`TimelineChartView`, `timelines/:timelineId/chart`): sticky header with a "Back to timeline" icon link (every screen size), `h2` "Severity chart" and the timeline title (inline Markdown, links as text) below it. Below the header: skeleton while loading, "No nodes yet" empty state with a "Back to timeline" action, else the chart. "Timeline not found" when the timeline does not exist. It renders the node detail as a child route.
+- Chart (`SeverityChart`): shadcn/ui `ChartContainer` with a Recharts `LineChart`. One point per node (`toSeverityPoints`, `severity-points.ts`): x is the 1-based place in the timeline order (nodes have no dates, D-003), y is the severity with fixed ticks 1 to 5. The line is `type="monotone"`, which never overshoots 1..5 between points; no animation. Line and point outlines use `--primary`, point fill `--background`, axis labels `--muted-foreground`. Height `h-72`, `lg:h-96`. The chart keeps 3 rem per point (plus 3 rem for the axis) as minimum width and scrolls horizontally inside its own container on long timelines; the page itself never scrolls horizontally.
+- Tooltip: `ChartTooltipContent` with the node title (inline Markdown, links as text) as label, plus the severity value.
+- Points: a custom `dot` renders each point as `<g role="link" tabIndex={0}>` with a transparent 24 px hit area, the visible point (r 5) and a `--ring` circle shown on hover and keyboard focus. Click or Enter navigates to `nodes/:nodeId` under the chart. The accessible name ("<title> Severity <n>") comes from hidden elements via `aria-labelledby`, because titles are Markdown. Recharts' `accessibilityLayer` is off (the points are the keyboard targets) and so is `activeDot` (it would cover the clickable point).
+- Recharts compares object and array props by reference and recreates the points when they change, which drops the focused point. Props of the chart are module constants or memoized (`data`, `dot`, tooltip content). Each point also carries `data-focus-id`, so focus can return to a recreated point (see Accessibility).
+- The chart config has no `color` entries, so the generated `ChartStyle` (which writes CSS variables through `dangerouslySetInnerHTML`) renders nothing.
 
 ## Node detail and forms
 
@@ -260,10 +275,10 @@ Sonner `Toaster` (`src/components/ui/sonner.tsx`), mounted once in `AppProviders
 ## Accessibility
 
 - Landmarks: `<header>` with the visually hidden `<h1>`, `<aside aria-label="Timelines">`, `<main>`. Headings: `h1` app, `h2` per pane (list, timeline), `h3` node cards. Every icon-only control has an `aria-label`; icons are `aria-hidden`.
-- Focus after dialogs (`useReturnFocus`, `src/hooks/use-return-focus.ts`, used by `RouteDialog` and `ConfirmDialog`): these dialogs have no Radix `Trigger`, so Radix would leave focus on `<body>`. The hook records the focused element when the dialog opens (for a dropdown menu item, the menu's trigger) and focuses it again on close; when it is gone or hidden (deleted card, list pane hidden on mobile), focus goes to the page heading. D-028.
+- Focus after dialogs (`useReturnFocus`, `src/hooks/use-return-focus.ts`, used by `RouteDialog` and `ConfirmDialog`): these dialogs have no Radix `Trigger`, so Radix would leave focus on `<body>`. The hook records the focused element (HTML or SVG) when the dialog opens (for a dropdown menu item, the menu's trigger) and focuses it again on close. When it was removed, the element with the same `data-focus-id` (`focusIdAttribute`, `src/lib/focus.ts`) takes its place; when there is none or it is hidden (deleted card, list pane hidden on mobile), focus goes to the page heading. D-028, D-042.
 - Focus after navigation (`AppLayout`): when a navigation leaves focus nowhere (on `<body>` or on an element that is gone or hidden, e.g. the list link on mobile), focus moves to the page heading of the view now shown, waiting up to 2 s for a view that is still loading. It runs after dialogs closed by the same navigation have restored their focus.
 - Page headings carry `pageHeadingProps` (`src/lib/focus.ts`: `tabIndex={-1}`, `data-page-heading`); the last visible one wins, so the timeline heading is preferred over the list heading on desktop.
-- Automated checks: `e2e/a11y.spec.ts` runs axe (WCAG 2.0/2.1/2.2 A and AA + best practices) on the main screens in light and dark themes, on both viewports. While a modal menu or dialog is open, the rules about content Radix hides on purpose are skipped (`aria-hidden-focus`, `landmark-one-main`, `page-has-heading-one`, `region`). `e2e/focus.spec.ts` covers focus return.
+- Automated checks: `e2e/a11y.spec.ts` runs axe (WCAG 2.0/2.1/2.2 A and AA + best practices) on the main screens (including the severity chart with a tooltip open) in light and dark themes, on both viewports. While a modal menu or dialog is open, the rules about content Radix hides on purpose are skipped (`aria-hidden-focus`, `landmark-one-main`, `page-has-heading-one`, `region`). `e2e/focus.spec.ts` covers focus return.
 
 ## PWA and offline
 

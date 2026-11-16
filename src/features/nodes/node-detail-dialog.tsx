@@ -14,7 +14,8 @@ import { nodeHeaderClasses } from './node-colors'
 import { NodeForm } from './node-form'
 
 /**
- * Child route of the timeline view, which passes the loaded timeline as outlet context. Opens in
+ * Child route of the timeline view and of the severity chart page, which pass the loaded timeline
+ * as outlet context; a direct URL closes to that parent route. Opens in
  * read mode; "Edit" swaps the content for the form inside the same dialog, and saving or
  * cancelling returns to read mode.
  */
@@ -22,7 +23,7 @@ export function NodeDetailDialog() {
   const timeline = useOutletContext<Timeline>()
   const { nodeId } = useParams()
   const node = useNode(nodeId)
-  const close = useCloseRoute(`/timelines/${timeline.id}`)
+  const close = useCloseRoute('..')
   const [editing, setEditing] = useState(false)
   // Color picked in the edit form, previewed in the header until the form is left.
   const [draftColor, setDraftColor] = useState<NodeColor | null | undefined>(undefined)
