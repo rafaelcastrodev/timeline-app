@@ -111,7 +111,6 @@ export function SeverityChart({ points, onOpenNode }: SeverityChartProps) {
           <LineChart
             data={points}
             accessibilityLayer={false}
-            title="Severity of each node in timeline order"
             margin={chartMargin}
           >
             <CartesianGrid vertical={false} />
