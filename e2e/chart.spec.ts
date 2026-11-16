@@ -21,7 +21,7 @@ async function seed(page: Page): Promise<string> {
     nodes: (
       [
         ['Calm', 1],
-        ['Storm', 5],
+        ['Storm', 7],
         ['Aftermath', 3],
       ] as const
     ).map(([title, severity], position) => ({
@@ -50,12 +50,12 @@ test('the timeline header opens the severity chart, one point per node', async (
   await expect(page).toHaveURL(`/timelines/${timelineId}/chart`)
   await expect(page.getByRole('heading', { name: 'Severity chart', level: 2 })).toBeVisible()
   await expect(point(page, 'Calm Severity 1')).toBeVisible()
-  await expect(point(page, 'Storm Severity 5')).toBeVisible()
+  await expect(point(page, 'Storm Severity 7')).toBeVisible()
   await expect(point(page, 'Aftermath Severity 3')).toBeVisible()
 
   // Higher severity sits higher on the chart.
   const top = async (name: string) => (await point(page, name).boundingBox())?.y ?? Number.NaN
-  expect(await top('Storm Severity 5')).toBeLessThan(await top('Aftermath Severity 3'))
+  expect(await top('Storm Severity 7')).toBeLessThan(await top('Aftermath Severity 3'))
   expect(await top('Aftermath Severity 3')).toBeLessThan(await top('Calm Severity 1'))
 
   await page.getByRole('link', { name: 'Back to timeline' }).click()
@@ -67,7 +67,7 @@ test('hovering a point shows the node title in the tooltip', async ({ page, isMo
   const timelineId = await seed(page)
   await page.goto(`/timelines/${timelineId}/chart`)
 
-  await point(page, 'Storm Severity 5').hover()
+  await point(page, 'Storm Severity 7').hover()
   await expect(page.locator('.recharts-tooltip-wrapper')).toContainText('Storm')
 })
 
@@ -75,7 +75,7 @@ test('clicking a point opens the node detail over the chart', async ({ page }) =
   const timelineId = await seed(page)
   await page.goto(`/timelines/${timelineId}/chart`)
 
-  await point(page, 'Storm Severity 5').click()
+  await point(page, 'Storm Severity 7').click()
   const dialog = page.getByRole('dialog', { name: 'Storm' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('Storm notes')).toBeVisible()
@@ -84,7 +84,7 @@ test('clicking a point opens the node detail over the chart', async ({ page }) =
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(page).toHaveURL(`/timelines/${timelineId}/chart`)
-  await expect(point(page, 'Storm Severity 5')).toBeFocused()
+  await expect(point(page, 'Storm Severity 7')).toBeFocused()
 })
 
 test('a point opens with Enter from the keyboard', async ({ page }) => {

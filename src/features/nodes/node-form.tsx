@@ -26,6 +26,7 @@ import {
   DEFAULT_NODE_SEVERITY,
   NODE_LAYERS,
   NODE_SEVERITIES,
+  severityLabel,
   nodeFormSchema,
   type NodeFormInput,
   type NodeColor,
@@ -179,7 +180,7 @@ export function NodeForm({
                     <SelectContent>
                       {NODE_SEVERITIES.map((severity) => (
                         <SelectItem key={severity} value={String(severity)}>
-                          {severity}
+                          {severityLabel(severity)}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -87,7 +87,7 @@ describe('transfer repository', () => {
     expect(content(importedNodes)).toEqual(content(sourceNodes))
     expect(importedNodes.map((node) => node.color)).toEqual(['violet', null])
     expect(importedNodes.map((node) => node.layer)).toEqual([4, 1])
-    expect(importedNodes.map((node) => node.severity)).toEqual([2, 1])
+    expect(importedNodes.map((node) => node.severity)).toEqual([2, 4])
     expect(importedNodes.every((node) => node.timeline_id === imported.id)).toBe(true)
     const sourceIds = new Set(sourceNodes.map((node) => node.id))
     expect(importedNodes.some((node) => sourceIds.has(node.id))).toBe(false)

@@ -67,7 +67,7 @@ interface TimelineNode {
   description: string        // Markdown
   color: NodeColor | null    // card color (Tailwind hue name); null = default card
   layer: NodeLayer           // 1..5, default 1; the timeline view can focus one layer
-  severity: NodeSeverity     // 1..5, default 1; stored only, no effect on the view
+  severity: NodeSeverity     // 1..7, default 4; plotted by the severity chart
   position: number           // 0..n-1, manual order within the timeline
   created_at: string         // ISO 8601, set once, preserved by import
   updated_at: string         // ISO 8601
@@ -78,7 +78,7 @@ interface TimelineNode {
 
 `NodeLayer` is an integer from 1 to 5 (`NODE_LAYERS`, `DEFAULT_NODE_LAYER = 1`, D-037).
 
-`NodeSeverity` is an integer from 1 to 5 (`NODE_SEVERITIES`, `DEFAULT_NODE_SEVERITY = 1`, D-041).
+`NodeSeverity` is an integer from 1 to 7 (`NODE_SEVERITIES`, `DEFAULT_NODE_SEVERITY = 4`, D-041, D-044). Each value has a name (`NODE_SEVERITY_NAMES`): Downfall, Lowest, Low, Mid, High, Highest, Climax; `severityLabel(n)` formats the option label `n (Name)`.
 
 ### Browser storage names
 
@@ -94,7 +94,7 @@ const stores = {
 db.version(1).stores(stores)
 db.version(2).stores(stores).upgrade(/* nodes without `color` get `color: null` */)
 db.version(3).stores(stores).upgrade(/* nodes without `layer` get `layer: 1` */)
-db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 1` */)
+db.version(4).stores(stores).upgrade(/* nodes without `severity` get the default severity (4) */)
 ```
 
 `color`, `layer` and `severity` are not indexed; v2 to v4 only migrate existing nodes.
@@ -118,7 +118,7 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 
 ### Code layout
 
-- zod schemas and inferred types: `src/types/models.ts`. `NODE_COLORS` / `nodeColorSchema` (type `NodeColor`); `NODE_LAYERS` / `nodeLayerSchema` (type `NodeLayer`); `NODE_SEVERITIES` / `nodeSeveritySchema` (type `NodeSeverity`); record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`; node `color` defaults to `null`, `layer` and `severity` to `1`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
+- zod schemas and inferred types: `src/types/models.ts`. `NODE_COLORS` / `nodeColorSchema` (type `NodeColor`); `NODE_LAYERS` / `nodeLayerSchema` (type `NodeLayer`); `NODE_SEVERITIES` / `nodeSeveritySchema` (type `NodeSeverity`); record schemas (`timelineSchema`, `timelineNodeSchema`), creation input schemas with defaults (`timelineInputSchema`, `nodeInputSchema`; node `color` defaults to `null`, `layer` to `1`, `severity` to `4`), partial update schemas without defaults (`timelineChangesSchema`, `nodeChangesSchema`) and form schemas with every field required (`timelineFormSchema`, `nodeFormSchema`). Titles are trimmed and required.
 - Export file schema: `src/types/transfer.ts` (`timelineFileSchema`, type `TimelineFile`), built from the shared field schemas in `models.ts`.
 - Repositories: `src/db/timelines.ts`, `src/db/nodes.ts`, `src/db/transfer.ts` (`exportTimeline`, `importTimeline`, `replaceTimeline`), re-exported from `src/db/index.ts`. They validate input with the zod schemas and throw `RecordNotFoundError` / `InvalidReorderError` (`src/db/errors.ts`). Error names must not match DOMException names, because Dexie rewraps those.
 - Live-query hooks: `src/db/hooks.ts`. Single-record hooks return `undefined` while loading and `null` when the record does not exist.
@@ -172,7 +172,7 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 Components live in `src/features/chart` (D-042).
 
 - Page (`TimelineChartView`, `timelines/:timelineId/chart`): sticky header with a "Back to timeline" icon link (every screen size), `h2` "Severity chart" and the timeline title (inline Markdown, links as text) below it. Below the header: skeleton while loading, "No nodes yet" empty state with a "Back to timeline" action, else the chart. "Timeline not found" when the timeline does not exist. It renders the node detail as a child route.
-- Chart (`SeverityChart`): shadcn/ui `ChartContainer` with a Recharts `LineChart`. One point per node (`toSeverityPoints`, `severity-points.ts`): x is the 1-based place in the timeline order (nodes have no dates, D-003), y is the severity with fixed ticks 1 to 5. The line is `type="monotone"`, which never overshoots 1..5 between points; no animation. Line and point outlines use `--primary`, point fill `--background`, axis labels `--muted-foreground`. Height `h-72`, `lg:h-96`. The chart keeps 3 rem per point (plus 3 rem for the axis) as minimum width and scrolls horizontally inside its own container on long timelines; the page itself never scrolls horizontally.
+- Chart (`SeverityChart`): shadcn/ui `ChartContainer` with a Recharts `LineChart`. One point per node (`toSeverityPoints`, `severity-points.ts`): x is the 1-based place in the timeline order (nodes have no dates, D-003), y is the severity with fixed ticks 1 to 7. The line is `type="monotone"`, which never overshoots 1..7 between points; no animation. Line and point outlines use `--primary`, point fill `--background`, axis labels `--muted-foreground`. Height `h-72`, `lg:h-96`. The chart keeps 3 rem per point (plus 3 rem for the axis) as minimum width and scrolls horizontally inside its own container on long timelines; the page itself never scrolls horizontally.
 - Tooltip: `ChartTooltipContent` with the node title (inline Markdown, links as text) as label, plus the severity value.
 - Points: a custom `dot` renders each point as `<g role="link" tabIndex={0}>` with a transparent 24 px hit area, the visible point (r 5) and a `--ring` circle shown on hover and keyboard focus. Click or Enter navigates to `nodes/:nodeId` under the chart. The accessible name ("<title> Severity <n>") comes from hidden elements via `aria-labelledby`, because titles are Markdown. Recharts' `accessibilityLayer` is off (the points are the keyboard targets) and so is `activeDot` (it would cover the clickable point).
 - Recharts compares object and array props by reference and recreates the points when they change, which drops the focused point. Props of the chart are module constants or memoized (`data`, `dot`, tooltip content). Each point also carries `data-focus-id`, so focus can return to a recreated point (see Accessibility).
@@ -184,7 +184,7 @@ Components live in `src/features/nodes`.
 
 - Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (fields in this order: title, card color, layer and severity side by side, description; the same form is used in edit mode). Saving appends the node at the end and closes the route back to the timeline.
 - Detail (`NodeDetailDialog`, `nodes/:nodeId`): read mode shows the title (inline Markdown, as the dialog title), the description (`MarkdownBlock`) and the "Edit" and "Delete" actions. While the node loads the dialog shows skeletons; a node that does not exist or belongs to another timeline shows "Node not found".
-- Layer and severity: two shadcn/ui Selects in a two-column row (on every screen size), each with the options 1 to 5 (stored as a number). "Layer" has the hint "The timeline can focus one layer and dim the others."; "Severity" has no hint.
+- Layer and severity: two shadcn/ui Selects in a two-column row (on every screen size), with the options 1 to 5 (layer) and 1 to 7 (severity), stored as a number. Severity options show the number and its name (`4 (Mid)`, `severityLabel`). "Layer" has the hint "The timeline can focus one layer and dim the others."; "Severity" has no hint.
 - Card color (`NodeColorPicker`): a fieldset "Card color" with a single-select Toggle Group of round swatches (radio semantics): "Default" (card background) followed by the `500` shade of each `NodeColor` (`--node-color`), labeled with the color name. The selected swatch shows a check icon (`neutral-950`, at least 4.3:1 on every `500` shade) and an outer ring. Selecting the active swatch again keeps it.
 - Header color (D-036): in read mode the dialog header uses the node's card surface (`nodeHeaderClasses`: the card background without hover, with the colored-card `--muted-foreground`); uncolored nodes keep `bg-popover`. In the create and edit forms the header previews the color picked in the form (`NodeForm` `onColorChange`); leaving the edit form returns to the stored color. Theme text colors stay legible on every hue (lowest: title 8.43:1, links 6.99:1, both dark yellow).
 - "Edit" swaps the read view for `NodeForm` inside the same dialog (component state, no route change) and focuses the title. Save and Cancel return to read mode and focus "Edit". Closing the dialog from edit mode closes the route (D-021).
@@ -240,7 +240,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
     "updated_at": "…"
   },
   "nodes": [
-    { "id": "…", "title": "…", "description": "…", "color": "blue", "layer": 1, "severity": 1, "position": 0, "created_at": "…", "updated_at": "…" }
+    { "id": "…", "title": "…", "description": "…", "color": "blue", "layer": 1, "severity": 4, "position": 0, "created_at": "…", "updated_at": "…" }
   ]
 }
 ```
@@ -248,7 +248,7 @@ Lives in `NodeList` (`src/features/nodes/node-list.tsx`) and `useNodeOrder` (`us
 - Export: one timeline per file; nodes sorted by `position`, without `timeline_id`. `exportTimeline` reads the timeline and its nodes in one read transaction. File name: `timeline-<slug>-<yyyymmdd>.json` (`exportFileName`, local date of `exported_at`; `slugify` in `src/lib/slug.ts` keeps link text, drops link targets and diacritics, caps at 50 chars, falls back to `untitled`). The JSON is indented and saved through an object URL and a temporary `<a download>` (`downloadTimeline`, `src/features/transfer/export.ts`).
 - Validation (`parseTimelineFile`, `src/features/transfer/parse.ts`): files over 10 MB are rejected before reading; then JSON parse, `format`, supported `schema_version`, and the zod schema (required fields, UUID ids, ISO dates, `orientation` enum, titles trimmed and non-empty, `position` a non-negative integer). Unknown fields are stripped. Failures throw `InvalidImportFileError` with a user-facing message; schema errors list up to 3 issues as `path: message` (e.g. `nodes[1].title: Title is required`) and a count of the rest.
 - Node order on import comes from the array order; the `position` values are validated but not used.
-- Node `color` is optional in the file: absent means `null` (files exported before card colors), otherwise it must be `null` or a `NodeColor`. Node `layer` and `severity` are optional too: absent means `1` (files exported before those fields), otherwise an integer from 1 to 5. Export always writes all three. Import as new and replace keep them.
+- Node `color` is optional in the file: absent means `null` (files exported before card colors), otherwise it must be `null` or a `NodeColor`. Node `layer` and `severity` are optional too (files exported before those fields): an absent `layer` means `1`, otherwise an integer from 1 to 5; an absent `severity` means `4`, otherwise an integer from 1 to 7. Export always writes all three. Import as new and replace keep them.
 - The import repository functions re-validate their input with `timelineFileSchema`; all writes run in one transaction, so on any error nothing is written.
 
 ### Import flow (UI)

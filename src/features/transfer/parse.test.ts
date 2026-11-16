@@ -61,9 +61,9 @@ describe('parseTimelineFile', () => {
     expect((await rejection(jsonFile(broken))).message).toContain('nodes[0].layer: ')
   })
 
-  it('accepts nodes without a severity (older exports) as severity 1', async () => {
+  it('accepts nodes without a severity (older exports) as severity 4', async () => {
     const file = makeTimelineFile(2)
-    file.nodes[1]!.severity = 4
+    file.nodes[1]!.severity = 7
     const legacy = {
       ...file,
       nodes: file.nodes.map(({ severity, ...node }, index) =>
@@ -71,10 +71,10 @@ describe('parseTimelineFile', () => {
       ),
     }
     const parsed = await parseTimelineFile(jsonFile(legacy))
-    expect(parsed.nodes.map((node) => node.severity)).toEqual([1, 4])
+    expect(parsed.nodes.map((node) => node.severity)).toEqual([4, 7])
   })
 
-  it.each([0, 6, 1.5, '2'])('rejects node severity %j', async (severity) => {
+  it.each([0, 8, 1.5, '2'])('rejects node severity %j', async (severity) => {
     const file = makeTimelineFile(1)
     const broken = { ...file, nodes: [{ ...file.nodes[0], severity }] }
     expect((await rejection(jsonFile(broken))).message).toContain('nodes[0].severity: ')

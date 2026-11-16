@@ -94,17 +94,17 @@ describe('node repository', () => {
     expect(await updateNode(node.id, { title: 'c' })).toMatchObject({ title: 'c', layer: 3 })
   })
 
-  it('creates nodes with severity 1 unless a severity is given, and updates the severity', async () => {
+  it('creates nodes with severity 4 unless a severity is given, and updates the severity', async () => {
     const { timeline } = await setup([])
     const node = await createNode(timeline.id, { title: 'a' })
-    expect(node.severity).toBe(1)
-    const severe = await createNode(timeline.id, { title: 'b', severity: 5 })
-    expect(await getNode(severe.id)).toMatchObject({ severity: 5 })
+    expect(node.severity).toBe(4)
+    const severe = await createNode(timeline.id, { title: 'b', severity: 7 })
+    expect(await getNode(severe.id)).toMatchObject({ severity: 7 })
     expect(await updateNode(node.id, { severity: 3 })).toMatchObject({ severity: 3 })
     expect(await updateNode(node.id, { layer: 2 })).toMatchObject({ layer: 2, severity: 3 })
   })
 
-  it.each([0, 6, 2.5])('rejects severity %s', async (severity) => {
+  it.each([0, 8, 2.5])('rejects severity %s', async (severity) => {
     const { timeline } = await setup([])
     await expect(createNode(timeline.id, { title: 'x', severity })).rejects.toThrow()
     expect(await countNodes(timeline.id)).toBe(0)

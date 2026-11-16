@@ -26,7 +26,7 @@ const fileTimelineSchema = z.object({
 /**
  * Node in an export file. Import uses the array order, not `position`, for the new order.
  * `color`, `layer` and `severity` are optional (files exported before those fields have none) and
- * default to `null`, `1` and `1`.
+ * default to `null`, `1` and `4`.
  */
 const fileNodeSchema = z.object({
   id: z.uuid(),

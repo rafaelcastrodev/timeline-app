@@ -32,11 +32,27 @@ export const DEFAULT_NODE_LAYER = 1
 export const nodeLayerSchema = z.int().min(1).max(NODE_LAYERS.length)
 export type NodeLayer = z.infer<typeof nodeLayerSchema>
 
-/** Severity of a node, from 1 to 5 (`1` is the default). Stored only; no effect on the view. */
-export const NODE_SEVERITIES = [1, 2, 3, 4, 5] as const
-export const DEFAULT_NODE_SEVERITY = 1
+/** Severity of a node, from 1 to 7 (`4` is the default). Plotted by the severity chart. */
+export const NODE_SEVERITIES = [1, 2, 3, 4, 5, 6, 7] as const
+export const DEFAULT_NODE_SEVERITY = 4
 export const nodeSeveritySchema = z.int().min(1).max(NODE_SEVERITIES.length)
 export type NodeSeverity = z.infer<typeof nodeSeveritySchema>
+/** Name of each severity, in `NODE_SEVERITIES` order. */
+export const NODE_SEVERITY_NAMES = [
+  'Downfall',
+  'Lowest',
+  'Low',
+  'Mid',
+  'High',
+  'Highest',
+  'Climax',
+] as const
+
+/** Option label of a severity: its number and name, e.g. `4 (Mid)`. */
+export function severityLabel(severity: NodeSeverity): string {
+  const name = NODE_SEVERITY_NAMES[severity - 1]
+  return name ? `${severity} (${name})` : String(severity)
+}
 
 export const isoDateTimeSchema = z.iso.datetime({ offset: true })
 const isoDateTime = isoDateTimeSchema

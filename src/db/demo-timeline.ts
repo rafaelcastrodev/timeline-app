@@ -13,7 +13,7 @@ export const DEMO_TIMELINE = {
       description: 'Et laboris ipsum ad quis.',
       color: 'pink',
       layer: 4,
-      severity: 5,
+      severity: 7,
     },
     {
       title: 'Eiusmod et',
@@ -69,7 +69,7 @@ export const DEMO_TIMELINE = {
       description: 'Ex ad dolore consectetur adipiscing nisi amet.',
       color: 'red',
       layer: 1,
-      severity: 4,
+      severity: 6,
     },
     {
       title: 'Enim adipiscing consectetur adipiscing',

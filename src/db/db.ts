@@ -47,7 +47,7 @@ export class TimelineDatabase extends Dexie {
             node.layer ??= DEFAULT_NODE_LAYER
           }),
       )
-    // v4: nodes gain `severity` (not indexed); existing nodes get severity 1.
+    // v4: nodes gain `severity` (not indexed); existing nodes get the default severity.
     this.version(4)
       .stores(stores)
       .upgrade((tx) =>

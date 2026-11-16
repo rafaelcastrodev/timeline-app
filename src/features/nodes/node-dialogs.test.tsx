@@ -226,26 +226,34 @@ describe('node severity', () => {
     const form = await screen.findByRole('dialog', { name: 'New node' })
     await user.type(within(form).getByLabelText('Title'), 'Critical')
     const severity = within(form).getByRole('combobox', { name: 'Severity' })
-    expect(severity).toHaveTextContent('1')
+    expect(severity).toHaveTextContent('4 (Mid)')
     await user.click(severity)
     const options = await screen.findAllByRole('option')
-    expect(options.map((option) => option.textContent)).toEqual(['1', '2', '3', '4', '5'])
-    await user.click(screen.getByRole('option', { name: '4' }))
-    expect(severity).toHaveTextContent('4')
+    expect(options.map((option) => option.textContent)).toEqual([
+      '1 (Downfall)',
+      '2 (Lowest)',
+      '3 (Low)',
+      '4 (Mid)',
+      '5 (High)',
+      '6 (Highest)',
+      '7 (Climax)',
+    ])
+    await user.click(screen.getByRole('option', { name: '7 (Climax)' }))
+    expect(severity).toHaveTextContent('7 (Climax)')
     await user.click(within(form).getByRole('button', { name: 'Create' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     const created = (await listNodes(timeline.id)).at(-1)!
-    expect(created).toMatchObject({ title: 'Critical', layer: 1, severity: 4 })
+    expect(created).toMatchObject({ title: 'Critical', layer: 1, severity: 7 })
 
     await act(() => router.navigate(`/timelines/${timeline.id}/nodes/${created.id}`))
     const dialog = await screen.findByRole('dialog', { name: 'Critical' })
     await user.click(within(dialog).getByRole('button', { name: 'Edit' }))
     const edit = await screen.findByRole('dialog', { name: 'Edit node' })
     const editSeverity = within(edit).getByRole('combobox', { name: 'Severity' })
-    expect(editSeverity).toHaveTextContent('4')
+    expect(editSeverity).toHaveTextContent('7 (Climax)')
     await user.click(editSeverity)
-    await user.click(await screen.findByRole('option', { name: '2' }))
+    await user.click(await screen.findByRole('option', { name: '2 (Lowest)' }))
     await user.click(within(edit).getByRole('button', { name: 'Save' }))
 
     await screen.findByRole('dialog', { name: 'Critical' })

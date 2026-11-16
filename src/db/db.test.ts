@@ -43,7 +43,7 @@ describe('database migrations', () => {
         title: 'Node',
         color: null,
         layer: 1,
-        severity: 1,
+        severity: 4,
         updated_at: at,
       })
       expect(db.verno).toBe(4)
@@ -79,7 +79,7 @@ describe('database migrations', () => {
     }
   })
 
-  it('v4 keeps the layer of v3 nodes and gives them severity 1', async () => {
+  it('v4 keeps the layer of v3 nodes and gives them the default severity 4', async () => {
     const v3 = new Dexie(NAME)
     v3.version(3).stores({
       timelines: 'id, updated_at',
@@ -101,7 +101,7 @@ describe('database migrations', () => {
 
     const db = new TimelineDatabase(NAME)
     try {
-      expect(await db.nodes.get(nodeId)).toMatchObject({ color: 'teal', layer: 4, severity: 1 })
+      expect(await db.nodes.get(nodeId)).toMatchObject({ color: 'teal', layer: 4, severity: 4 })
     } finally {
       db.close()
     }

@@ -20,7 +20,7 @@ const chartConfig = {
 // node dialog opens over the chart) recompute the layout and recreate the points, which drops
 // the focused point. Hence module constants here and stable callbacks below.
 const chartMargin = { top: 16, right: 16, bottom: 8, left: 0 }
-const severityDomain = [NODE_SEVERITIES[0], NODE_SEVERITIES[4]]
+const severityDomain = [NODE_SEVERITIES[0], NODE_SEVERITIES[6]]
 const severityTicks = [...NODE_SEVERITIES]
 const xAxisLabel = { value: 'Timeline order', position: 'insideBottom', offset: -4 } as const
 const yAxisLabel = { value: 'Severity', angle: -90, position: 'insideLeft', offset: 12 } as const
@@ -45,7 +45,7 @@ interface SeverityChartProps {
 
 /**
  * Line chart of node severity in timeline order: one point per node, joined by a monotone curve
- * (never overshoots 1..5 between points). Each point is a link-like control that opens the node.
+ * (never overshoots 1..7 between points). Each point is a link-like control that opens the node.
  */
 export function SeverityChart({ points, onOpenNode }: SeverityChartProps) {
   const labelPrefix = useId()
