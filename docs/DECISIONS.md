@@ -150,3 +150,7 @@ Rationale: on GitHub Pages every project site of one account is served from the 
 ## D-039 — GitHub Pages deployment with a configurable base path (2026-11-04)
 The app is hosted on GitHub Pages as a project site (`/timeline-app/`), built and deployed by a GitHub Actions workflow on push to `main`. Vite's `base` comes from `BASE_PATH` (default `/`); the router uses `import.meta.env.BASE_URL` as `basename`; the manifest leaves `start_url` and `scope` to vite-plugin-pwa, which uses `base`. The workflow copies `index.html` to `404.html` for deep links.
 Rationale: "Deploy from a branch" publishes the repository as is, so the browser got the unbuilt `index.html` pointing at `/src/main.tsx`; a static SPA needs the build output. A project site lives under a subpath, so every absolute URL (assets, routes, manifest, service worker scope) must follow it; an environment variable keeps the local tooling and E2E at `/`. Pages cannot rewrite unknown paths to the app shell, and `404.html` is the fallback it does serve; a hash router would avoid it but change every URL. Lint and unit tests run before the build so a broken commit is not deployed.
+
+## D-040 — Node form field order: title, card color, layer, description (2026-11-16)
+`NodeForm` shows its fields as title, card color, layer, description, in both the create and the edit dialogs.
+Rationale: requested by the user; the short fields sit together at the top and the description, the longest field, comes last. One shared form keeps create and edit consistent.

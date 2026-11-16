@@ -154,7 +154,7 @@ db.version(3).stores(stores).upgrade(/* nodes without `layer` get `layer: 1` */)
 
 Components live in `src/features/nodes`.
 
-- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (title, description, layer, card color). Saving appends the node at the end and closes the route back to the timeline.
+- Create (`NodeCreateDialog`, `nodes/new`): `NodeForm` (fields in this order: title, card color, layer, description; the same form is used in edit mode). Saving appends the node at the end and closes the route back to the timeline.
 - Detail (`NodeDetailDialog`, `nodes/:nodeId`): read mode shows the title (inline Markdown, as the dialog title), the description (`MarkdownBlock`) and the "Edit" and "Delete" actions. While the node loads the dialog shows skeletons; a node that does not exist or belongs to another timeline shows "Node not found".
 - Layer: a shadcn/ui Select labeled "Layer" with the options 1 to 5 (stored as a number) and the hint "The timeline can focus one layer and dim the others."
 - Card color (`NodeColorPicker`): a fieldset "Card color" with a single-select Toggle Group of round swatches (radio semantics): "Default" (card background) followed by the `500` shade of each `NodeColor` (`--node-color`), labeled with the color name. The selected swatch shows a check icon (`neutral-950`, at least 4.3:1 on every `500` shade) and an outer ring. Selecting the active swatch again keeps it.

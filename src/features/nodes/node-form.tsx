@@ -103,19 +103,19 @@ export function NodeForm({
 
           <Controller
             control={form.control}
-            name="description"
+            name="color"
             render={({ field }) => (
-              <Field>
-                <FieldLabel htmlFor={`${id}-description`}>Description</FieldLabel>
-                <MarkdownEditor
-                  id={`${id}-description`}
-                  name={field.name}
-                  ref={field.ref}
+              <FieldSet>
+                <FieldLegend variant="label">Card color</FieldLegend>
+                <NodeColorPicker
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(color) => {
+                    field.onChange(color)
+                    onColorChange?.(color)
+                  }}
                   onBlur={field.onBlur}
                 />
-              </Field>
+              </FieldSet>
             )}
           />
 
@@ -155,19 +155,19 @@ export function NodeForm({
 
           <Controller
             control={form.control}
-            name="color"
+            name="description"
             render={({ field }) => (
-              <FieldSet>
-                <FieldLegend variant="label">Card color</FieldLegend>
-                <NodeColorPicker
+              <Field>
+                <FieldLabel htmlFor={`${id}-description`}>Description</FieldLabel>
+                <MarkdownEditor
+                  id={`${id}-description`}
+                  name={field.name}
+                  ref={field.ref}
                   value={field.value}
-                  onChange={(color) => {
-                    field.onChange(color)
-                    onColorChange?.(color)
-                  }}
+                  onChange={field.onChange}
                   onBlur={field.onBlur}
                 />
-              </FieldSet>
+              </Field>
             )}
           />
         </FieldGroup>
