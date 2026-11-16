@@ -35,5 +35,7 @@ export default defineConfig({
     command: `npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
+    // Specs start from an empty database, without the demo timeline of a first launch.
+    env: { VITE_DEMO_TIMELINE: 'off' },
   },
 })

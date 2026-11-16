@@ -55,5 +55,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    // Tests start from an empty database; `src/db/demo-timeline.test.ts` covers the demo seed.
+    env: { VITE_DEMO_TIMELINE: 'off' },
   },
 })

@@ -99,6 +99,13 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 
 `color`, `layer` and `severity` are not indexed; v2 to v4 only migrate existing nodes.
 
+### Demo timeline (first launch)
+
+`TimelineDatabase` registers Dexie's `populate` event, which fires once, inside the transaction that creates the database. It writes the demo timeline from `src/db/demo-timeline.ts` (`DEMO_TIMELINE`, `demoTimelineRecords(now)`): "Lorem ipsum demo", vertical, 15 nodes with fixed content, new UUIDs and every timestamp set to the creation time. `populate` does not fire on upgrades or later opens, so an existing database never receives it and a deleted demo timeline does not come back; clearing the site data counts as a first launch. D-043.
+
+- Opt-out: the constructor option `seedDemo` (default `true`); the app instance `db` sets it from `VITE_DEMO_TIMELINE` (`off` skips the seed, typed in `src/vite-env.d.ts`). Vitest (`test.env` in `vite.config.ts`) and Playwright (`webServer.env`) set it to `off`, so tests start from an empty database. Playwright reuses a server already listening on port 4173 outside CI; one started without the variable seeds the demo and breaks the specs that expect an empty dashboard.
+- `src/db/demo-timeline.test.ts` covers the seed on a separately named database.
+
 ### Rules
 
 - Create/update/delete of a node bumps the parent timeline's `updated_at` in the same transaction (dashboard sorts by recent activity).
@@ -107,6 +114,7 @@ db.version(4).stores(stores).upgrade(/* nodes without `severity` get `severity: 
 - Delete node: renumber the remaining nodes so positions stay `0..n-1`.
 - Delete timeline: delete its nodes and the timeline in one transaction.
 - Call `navigator.storage.persist()` on startup to reduce the risk of the browser evicting data.
+- A new database starts with the demo timeline (see below).
 
 ### Code layout
 

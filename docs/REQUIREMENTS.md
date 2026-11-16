@@ -25,6 +25,7 @@ Personal application. No backend: all data stays in the browser (IndexedDB). JSO
 | F15 | Node layers | Each node has a layer from 1 to 5 (default 1), chosen with a select in the node form. The timeline view has a button that switches the focused layer; nodes of the other layers are shown with reduced opacity. Visual only: layers do not change order, filtering or export content beyond the field itself. |
 | F16 | Node severity | Each node has a severity from 1 to 5 (default 1), chosen with a select next to the layer select in the node form. Stored and exported; it does not change the timeline view. |
 | F17 | Severity chart | Each timeline has a chart page, opened from a button next to the layer button in the timeline view. Every node is a point on a curve, in timeline order; the higher the severity, the higher the point. Hovering a point shows the node title; clicking it opens the node detail. Card color and layer are not shown in the chart. |
+| F18 | Demo timeline | On first launch (the browser has no app data yet) the app contains a demo timeline: "Lorem ipsum demo" with 15 nodes of random colors, layers and severities, lorem ipsum titles and descriptions of at most 50 characters. It is an ordinary timeline: it can be edited or deleted, and once deleted it does not come back. |
 
 ## Non-functional
 
