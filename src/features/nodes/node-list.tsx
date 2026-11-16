@@ -121,7 +121,7 @@ export function NodeList({ timelineId, nodes, orientation, focusedLayer }: NodeL
             <ol
               aria-label="Nodes"
               data-orientation="horizontal"
-              className="relative flex w-max gap-4 px-4 pt-6 pb-4 before:absolute before:inset-x-0 before:top-[calc(1.875rem-0.5px)] before:h-px before:bg-border lg:px-6"
+              className="relative isolate flex w-max gap-4 px-4 pt-6 pb-4 before:absolute before:inset-x-0 before:top-[calc(1.875rem-0.5px)] before:h-px before:bg-border lg:px-6"
             >
               {items}
             </ol>
@@ -130,7 +130,7 @@ export function NodeList({ timelineId, nodes, orientation, focusedLayer }: NodeL
           <ol
             aria-label="Nodes"
             data-orientation="vertical"
-            className="relative flex flex-col gap-4 py-4 pr-4 pl-10 before:absolute before:inset-y-0 before:left-[calc(1.5rem-0.5px)] before:w-px before:bg-border lg:pr-6 lg:pl-12 lg:before:left-[calc(2rem-0.5px)]"
+            className="relative isolate flex flex-col gap-4 py-4 pr-4 pl-10 before:absolute before:inset-y-0 before:left-[calc(1.5rem-0.5px)] before:w-px before:bg-border lg:pr-6 lg:pl-12 lg:before:left-[calc(2rem-0.5px)]"
           >
             {items}
           </ol>

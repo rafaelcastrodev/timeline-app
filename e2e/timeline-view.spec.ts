@@ -163,3 +163,51 @@ test('timeline view: empty state and add node action', async ({ page }) => {
   }
   await expectNoPageOverflow(page)
 })
+
+test('timeline view: the sticky header covers scrolled cards', async ({ page }) => {
+  await openEmptyApp(page)
+  const timelineId = await seedTimeline(page)
+  await page.goto(`/timelines/${timelineId}`)
+  await expect(cards(page)).toHaveCount(NODE_COUNT)
+  // Room below the list, so the first card can scroll up to the header in both orientations.
+  await page.addStyleTag({ content: '[aria-label="Nodes"] { margin-bottom: 200vh; }' })
+
+  const header = page.locator('main header')
+  const toggle = page.getByRole('radiogroup', { name: 'Orientation' })
+  for (const orientation of ['Vertical', 'Horizontal']) {
+    await toggle.getByRole('radio', { name: orientation }).click()
+    await expect(nodeList(page)).toHaveAttribute('data-orientation', orientation.toLowerCase())
+
+    // Scroll the first drag handle under the header; the header must paint above it.
+    const handle = cards(page)
+      .first()
+      .getByRole('button', { name: /^Reorder/ })
+    const topElement = await handle.evaluate(
+      (element, headerElement) => {
+        let scroller = element.parentElement
+        // The nearest ancestor that scrolls vertically (the horizontal node scroller does not).
+        while (
+          scroller &&
+          !(
+            /(auto|scroll)/.test(getComputedStyle(scroller).overflowY) &&
+            scroller.scrollHeight > scroller.clientHeight
+          )
+        ) {
+          scroller = scroller.parentElement
+        }
+        const target = scroller ?? document.scrollingElement!
+        const headerBox = headerElement.getBoundingClientRect()
+        const box = element.getBoundingClientRect()
+        target.scrollTop += box.top + box.height / 2 - (headerBox.top + headerBox.height / 2)
+        const moved = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          moved.left + moved.width / 2,
+          moved.top + moved.height / 2,
+        )
+        return { inHeader: headerElement.contains(hit), onHandle: element.contains(hit) }
+      },
+      await header.elementHandle(),
+    )
+    expect(topElement).toEqual({ inHeader: true, onHandle: false })
+  }
+})
