@@ -40,6 +40,32 @@ describe('node repository', () => {
     expect(await titles(timeline.id)).toEqual(['a', 'b'])
   })
 
+  it('inserts a node before another one and shifts the following positions', async () => {
+    const { timeline, nodes } = await setup(['a', 'b', 'c'])
+    advance()
+    const inserted = await createNode(timeline.id, { title: 'x' }, { beforeId: nodes[1]!.id })
+    expect(inserted.position).toBe(1)
+    expect(await titles(timeline.id)).toEqual(['a', 'x', 'b', 'c'])
+    expect(await positions(timeline.id)).toEqual([0, 1, 2, 3])
+    // Shifting is not a content change: the other nodes keep their updated_at.
+    expect((await getNode(nodes[2]!.id))?.updated_at).toBe(nodes[2]!.updated_at)
+    expect((await getTimeline(timeline.id))?.updated_at).toBe('2026-01-01T00:00:01.000Z')
+
+    await createNode(timeline.id, { title: 'first' }, { beforeId: nodes[0]!.id })
+    expect(await titles(timeline.id)).toEqual(['first', 'a', 'x', 'b', 'c'])
+  })
+
+  it('appends when the node to insert before is missing or in another timeline', async () => {
+    const { timeline } = await setup(['a', 'b'])
+    const other = await createTimeline({ title: 'Other' })
+    const foreign = await createNode(other.id, { title: 'y' })
+    await createNode(timeline.id, { title: 'x' }, { beforeId: foreign.id })
+    await createNode(timeline.id, { title: 'z' }, { beforeId: crypto.randomUUID() })
+    expect(await titles(timeline.id)).toEqual(['a', 'b', 'x', 'z'])
+    expect(await positions(timeline.id)).toEqual([0, 1, 2, 3])
+    expect(await titles(other.id)).toEqual(['y'])
+  })
+
   it('rejects a node for a missing timeline and writes nothing', async () => {
     const missing = crypto.randomUUID()
     await expect(createNode(missing, { title: 'x' })).rejects.toBeInstanceOf(RecordNotFoundError)

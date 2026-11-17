@@ -170,6 +170,36 @@ describe('node create', () => {
   })
 })
 
+describe('node insert', () => {
+  it('inserts a node between two cards from the gap button', async () => {
+    const { timeline, node } = await seed()
+    const second = await createNode(timeline.id, { title: 'Day three' })
+    const { router, user } = renderAt(`/timelines/${timeline.id}`)
+
+    await user.click(await screen.findByRole('link', { name: 'Insert node at position 2' }))
+    const dialog = await screen.findByRole('dialog', { name: 'New node' })
+    expect(router.state.location.search).toBe(`?before=${second.id}`)
+    expect(await within(dialog).findByText('Inserted at position 2.')).toBeInTheDocument()
+    await user.type(within(dialog).getByLabelText('Title'), 'Day two')
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/timelines/${timeline.id}`))
+    expect((await listNodes(timeline.id)).map((n) => [n.title, n.position])).toEqual([
+      [node.title, 0],
+      ['Day two', 1],
+      ['Day three', 2],
+    ])
+    const list = await screen.findByRole('list', { name: 'Nodes' })
+    await waitFor(() =>
+      expect(
+        within(list)
+          .getAllByRole('heading', { level: 3 })
+          .map((heading) => heading.textContent),
+      ).toEqual(['Day one', 'Day two', 'Day three']),
+    )
+  })
+})
+
 describe('node create color', () => {
   it('creates a node with the chosen color', async () => {
     const { timeline } = await seed()

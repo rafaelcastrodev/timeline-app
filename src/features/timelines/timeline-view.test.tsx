@@ -52,12 +52,21 @@ describe('timeline view', () => {
     expect(within(items[0]!).getByRole('heading', { level: 3 })).toHaveTextContent('First day')
     expect(within(items[0]!).getByText('day').tagName).toBe('STRONG')
     expect(items[0]).toHaveTextContent('Arrive here')
-    // Each card has one link (its title) to the node detail; Markdown links render as text.
+    // Each card has one link (its title) to the node detail; Markdown links render as text. The
+    // gap between two cards holds a link that inserts a node there (none before the first card).
     expect(
       within(list)
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(nodes.map((node) => `/timelines/${timeline.id}/nodes/${node.id}`))
+    ).toEqual([
+      `/timelines/${timeline.id}/nodes/${nodes[0]!.id}`,
+      `/timelines/${timeline.id}/nodes/new?before=${nodes[1]!.id}`,
+      `/timelines/${timeline.id}/nodes/${nodes[1]!.id}`,
+    ])
+    expect(within(items[1]!).getByRole('link', { name: 'Insert node at position 2' })).toBeVisible()
+    // The marker shows the severity, named for screen readers.
+    const marker = items[0]!.querySelector('[data-slot="node-marker"]')
+    expect(marker).toHaveTextContent('4Severity 4 (Mid)')
     expect(within(items[1]!).getByRole('heading', { level: 3 })).toHaveTextContent('Second day')
     expect(items[1]!.querySelector('[data-slot="markdown-excerpt"]')).toBeNull()
     expect(items[0]!.querySelector('[data-slot="drag-handle"]')).not.toBeNull()

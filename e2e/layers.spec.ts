@@ -45,8 +45,11 @@ const item = (page: Page, title: string) =>
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: title, level: 3 }) })
 
+// Dimming applies to the card and marker wrapper, not to the insert button in the gap before it.
 const opacity = (locator: Locator) =>
-  locator.evaluate((element) => Number(getComputedStyle(element).opacity))
+  locator
+    .locator('[data-slot=node-item]')
+    .evaluate((element) => Number(getComputedStyle(element).opacity))
 
 test('layer focus dims the other layers and switches between the layers in use', async ({
   page,

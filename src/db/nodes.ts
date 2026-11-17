@@ -22,18 +22,44 @@ async function touchTimeline(timelineId: string, now: string): Promise<void> {
   if (updated === 0) throw new RecordNotFoundError('timeline', timelineId)
 }
 
-/** Appends a node at the end of the timeline (`position = max + 1`). */
-export async function createNode(timelineId: string, input: NodeInput): Promise<TimelineNode> {
+interface CreateNodeOptions {
+  /**
+   * Inserts the node at this node's position and shifts it and the nodes after it by one. When
+   * the node no longer exists or belongs to another timeline, the new node is appended instead,
+   * so the form's content is never lost to a concurrent delete.
+   */
+  beforeId?: string
+}
+
+/** Appends a node at the end of the timeline (`position = max + 1`), or inserts it before `beforeId`. */
+export async function createNode(
+  timelineId: string,
+  input: NodeInput,
+  { beforeId }: CreateNodeOptions = {},
+): Promise<TimelineNode> {
   const fields = nodeInputSchema.parse(input)
   return db.transaction('rw', db.timelines, db.nodes, async () => {
     const now = nowIso()
     await touchTimeline(timelineId, now)
-    const last = await byPosition(timelineId).last()
+    const before = beforeId ? await db.nodes.get(beforeId) : undefined
+    let position: number
+    if (before && before.timeline_id === timelineId) {
+      position = before.position
+      const following = await byPosition(timelineId)
+        .filter((node) => node.position >= position)
+        .toArray()
+      await db.nodes.bulkUpdate(
+        following.map((node) => ({ key: node.id, changes: { position: node.position + 1 } })),
+      )
+    } else {
+      const last = await byPosition(timelineId).last()
+      position = last ? last.position + 1 : 0
+    }
     const node: TimelineNode = {
       id: crypto.randomUUID(),
       timeline_id: timelineId,
       ...fields,
-      position: last ? last.position + 1 : 0,
+      position,
       created_at: now,
       updated_at: now,
     }

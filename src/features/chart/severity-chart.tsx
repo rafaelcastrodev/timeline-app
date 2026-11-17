@@ -108,11 +108,7 @@ export function SeverityChart({ points, onOpenNode }: SeverityChartProps) {
           config={chartConfig}
           className="aspect-auto h-72 w-full lg:h-96 [&_.recharts-label]:fill-muted-foreground"
         >
-          <LineChart
-            data={points}
-            accessibilityLayer={false}
-            margin={chartMargin}
-          >
+          <LineChart data={points} accessibilityLayer={false} margin={chartMargin}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="order"
